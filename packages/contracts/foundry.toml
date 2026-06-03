@@ -1,0 +1,21 @@
+[profile.default]
+src = "contracts"
+test = "test"
+script = "script"
+out = "out"
+cache_path = "foundry-cache"
+libs = ["node_modules", "../../node_modules"]
+
+remappings = [
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+    "@reineira-os/rss/=node_modules/@reineira-os/rss/",
+    "forge-std/=../../node_modules/forge-std/src/",
+]
+
+solc_version = "0.8.25"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+
+[profile.default.fuzz]
+runs = 256

@@ -1,0 +1,24 @@
+node_modules/
+dist/
+out/
+foundry-cache/
+broadcast/
+cache/
+coverage/
+*.tsbuildinfo
+
+# Next.js
+.next/
+next-env.d.ts
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.pk
+
+# OS files
+.DS_Store
+Thumbs.db

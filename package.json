@@ -1,0 +1,25 @@
+{
+  "name": "@reineira-os/x402-rss-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reineira Settlement Standard (RSS) + x402 insured-settlement adapter",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "compile": "pnpm --filter @reineira-os/rss run compile && pnpm --filter @reineira-os/x402-rss-contracts run compile",
+    "test:contracts": "pnpm --filter @reineira-os/rss run test && pnpm --filter @reineira-os/x402-rss-contracts run test",
+    "lint": "pnpm -r run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\" && forge fmt packages/rss packages/contracts",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\""
+  },
+  "devDependencies": {
+    "forge-std": "github:foundry-rs/forge-std",
+    "prettier": "^3.4.0",
+    "typescript": "^5.7.0"
+  }
+}
