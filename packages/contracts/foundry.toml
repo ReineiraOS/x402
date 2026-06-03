@@ -19,3 +19,7 @@ optimizer_runs = 200
 
 [profile.default.fuzz]
 runs = 256
+
+# lowercase immutables match the core protocol convention (vendored contracts)
+[lint]
+exclude_lints = ["screaming-snake-case-immutable"]

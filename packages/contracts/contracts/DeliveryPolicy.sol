@@ -48,12 +48,12 @@ contract DeliveryPolicy is IUnderwriterPolicy, ERC165 {
         emit PolicyBound(coverageId, resolver, escrowId);
     }
 
-    function evaluateRisk(uint256, bytes calldata) external override returns (uint256 riskScore) {
+    function evaluateRisk(uint256, bytes calldata) external view override returns (uint256 riskScore) {
         if (msg.sender != coverageManager) revert NotCoverageManager();
         return 0;
     }
 
-    function judge(uint256 coverageId, bytes calldata) external override returns (bool valid) {
+    function judge(uint256 coverageId, bytes calldata) external view override returns (bool valid) {
         Binding storage binding = _bindings[coverageId];
         if (!binding.configured) revert NotBound(coverageId);
         return IBreachOracle(binding.resolver).isBreached(binding.escrowId);

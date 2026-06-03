@@ -43,10 +43,13 @@ contract DeliveryDeadlineResolver is IConditionResolver, ERC165 {
         if (deadline <= block.timestamp || deadline > type(uint64).max) revert InvalidDeadline();
         if (attester == address(0)) revert InvalidAttester();
 
+        // deadline is bound-checked against type(uint64).max above
+        // forge-lint: disable-next-line(unsafe-typecast)
         condition.deadline = uint64(deadline);
         condition.attester = attester;
         condition.configured = true;
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         emit ConditionConfigured(escrowId, uint64(deadline), attester);
     }
 
