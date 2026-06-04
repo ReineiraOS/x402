@@ -10,7 +10,7 @@ const ACCOUNT = privateKeyToAccount(
 
 const PAY_TO = "0x000000000000000000000000000000000000dEaD";
 
-function paymentRequired(amount = "1000000") {
+function paymentRequired(amount = "1000000", asset: string = arbitrumSepolia.usdc) {
   return {
     x402Version: 2,
     error: "payment required",
@@ -20,7 +20,7 @@ function paymentRequired(amount = "1000000") {
         scheme: "exact",
         network: arbitrumSepolia.network,
         amount,
-        asset: arbitrumSepolia.usdc,
+        asset,
         payTo: PAY_TO,
         maxTimeoutSeconds: 120,
         extra: { name: "USD Coin", version: "2" },
@@ -29,14 +29,14 @@ function paymentRequired(amount = "1000000") {
   };
 }
 
-function mockResource(amount = "1000000") {
-  const challenge = encodePaymentRequiredHeader(paymentRequired(amount) as never);
+function mockResource(amount = "1000000", asset: string = arbitrumSepolia.usdc) {
+  const challenge = encodePaymentRequiredHeader(paymentRequired(amount, asset) as never);
   const calls: Array<{ headers: Headers }> = [];
   const fetch = vi.fn(async (input: Request | string | URL, init?: RequestInit) => {
     const req = input instanceof Request ? input : new Request(input, init);
     calls.push({ headers: req.headers });
     if (!req.headers.get("payment-signature")) {
-      return new Response(JSON.stringify(paymentRequired(amount)), {
+      return new Response(JSON.stringify(paymentRequired(amount, asset)), {
         status: 402,
         headers: { "content-type": "application/json", "payment-required": challenge },
       });
@@ -81,5 +81,17 @@ describe("createX402RssFetch", () => {
     const { fetch } = mockResource("999000000"); // 999 USDC > 10 USDC cap
     const f = createX402RssFetch({ account: ACCOUNT, fetch: fetch as never, maxValue: 10_000_000n });
     await expect(f("https://example.test/job")).rejects.toThrow(/amount exceeds maxValue/);
+  });
+
+  it("rejects a payment whose asset is not the configured USDC", async () => {
+    const { fetch } = mockResource("1000000", "0x1111111111111111111111111111111111111111");
+    const f = createX402RssFetch({ account: ACCOUNT, fetch: fetch as never });
+    await expect(f("https://example.test/job")).rejects.toThrow(/no acceptable payment requirements/);
+  });
+
+  it("rejects a non-positive payment amount", async () => {
+    const { fetch } = mockResource("0");
+    const f = createX402RssFetch({ account: ACCOUNT, fetch: fetch as never });
+    await expect(f("https://example.test/job")).rejects.toThrow(/non-positive payment amount/);
   });
 });

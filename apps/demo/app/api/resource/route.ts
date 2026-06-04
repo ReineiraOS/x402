@@ -46,7 +46,15 @@ export async function GET(request: Request) {
   }
 
   // STUB: real settlement verification (facilitator + RSS escrow) lands in B (DEV-194)
-  const payment = decodePaymentSignatureHeader(paymentHeader);
+  let payment: ReturnType<typeof decodePaymentSignatureHeader>;
+  try {
+    payment = decodePaymentSignatureHeader(paymentHeader);
+  } catch {
+    return NextResponse.json({ error: "malformed payment-signature header" }, { status: 400 });
+  }
+  if (!payment.accepted) {
+    return NextResponse.json({ error: "invalid payment payload" }, { status: 400 });
+  }
   const authorization = (payment.payload as { authorization?: { from?: string } }).authorization;
 
   return NextResponse.json(

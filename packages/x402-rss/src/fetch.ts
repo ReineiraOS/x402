@@ -20,14 +20,23 @@ export function createX402RssFetch(opts: CreateX402RssFetchOptions): typeof fetc
   const maxValue = opts.maxValue ?? arbitrumSepolia.defaultMaxValue;
 
   const selectWithinMaxValue: SelectPaymentRequirements = (_x402Version, requirements) => {
-    const chosen =
-      requirements.find(
-        (r) => r.scheme === arbitrumSepolia.scheme && r.network === arbitrumSepolia.network,
-      ) ?? requirements[0];
+    const chosen = requirements.find(
+      (r) =>
+        r.scheme === arbitrumSepolia.scheme &&
+        r.network === arbitrumSepolia.network &&
+        r.asset.toLowerCase() === arbitrumSepolia.usdc.toLowerCase(),
+    );
     if (!chosen) {
-      throw new Error("x402-rss: no acceptable payment requirements");
+      throw new Error("x402-rss: no acceptable payment requirements (exact / eip155:421614 / USDC)");
     }
-    if (BigInt(chosen.amount) > maxValue) {
+    if (!/^[0-9]+$/.test(chosen.amount)) {
+      throw new Error("x402-rss: malformed payment amount");
+    }
+    const amount = BigInt(chosen.amount);
+    if (amount <= 0n) {
+      throw new Error("x402-rss: non-positive payment amount");
+    }
+    if (amount > maxValue) {
       throw new Error("x402-rss: amount exceeds maxValue");
     }
     return chosen;

@@ -3,10 +3,16 @@ import { X402 } from "@reineira-os/x402-rss-shared";
 import { createX402RssFetch } from "@reineira-os/x402-rss";
 
 const RESOURCE_URL = process.env.RESOURCE_URL ?? "http://localhost:3000/api/resource";
-const BUYER_PRIVATE_KEY = (process.env.BUYER_PRIVATE_KEY ??
-  "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d") as `0x${string}`;
+// Standard publicly-known Anvil/Hardhat test account #1 — throwaway demo default, NEVER fund.
+const ANVIL_TEST_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+const BUYER_PRIVATE_KEY = (process.env.BUYER_PRIVATE_KEY ?? ANVIL_TEST_KEY) as `0x${string}`;
 
 async function main() {
+  if (BUYER_PRIVATE_KEY === ANVIL_TEST_KEY) {
+    console.warn(
+      "[buyer-agent] WARNING: using the well-known public Anvil test key — set BUYER_PRIVATE_KEY for any non-local run.",
+    );
+  }
   const account = privateKeyToAccount(BUYER_PRIVATE_KEY);
   const fetchPaid = createX402RssFetch({ account });
 
