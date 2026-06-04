@@ -60,4 +60,30 @@ describe("facilitator app", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it("POST /verify when facilitator throws -> 502 with structured error", async () => {
+    const app = createApp(
+      fakeFacilitator({ verify: async () => { throw new Error("rpc down"); } }) as never,
+    );
+    const res = await app.request("/verify", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ x402Version: 2, paymentPayload: payload, paymentRequirements: requirements }),
+    });
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ isValid: false, invalidReason: "rpc down" });
+  });
+
+  it("POST /settle when facilitator throws -> 502 with structured error", async () => {
+    const app = createApp(
+      fakeFacilitator({ settle: async () => { throw new Error("settlement reverted"); } }) as never,
+    );
+    const res = await app.request("/settle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ x402Version: 2, paymentPayload: payload, paymentRequirements: requirements }),
+    });
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ success: false, errorReason: "settlement reverted" });
+  });
 });

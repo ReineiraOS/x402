@@ -26,8 +26,13 @@ export function createApp(facilitator: FacilitatorLike): Hono {
     if (!body.paymentPayload || !body.paymentRequirements) {
       return c.json({ isValid: false, invalidReason: "missing paymentPayload or paymentRequirements" }, 400);
     }
-    const result = await facilitator.verify(body.paymentPayload as never, body.paymentRequirements as never);
-    return c.json(result);
+    try {
+      const result = await facilitator.verify(body.paymentPayload as never, body.paymentRequirements as never);
+      return c.json(result);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : "verify failed";
+      return c.json({ isValid: false, invalidReason: reason }, 502 as const);
+    }
   });
 
   app.post("/settle", async (c) => {
@@ -40,8 +45,13 @@ export function createApp(facilitator: FacilitatorLike): Hono {
     if (!body.paymentPayload || !body.paymentRequirements) {
       return c.json({ success: false, errorReason: "missing paymentPayload or paymentRequirements" }, 400);
     }
-    const result = await facilitator.settle(body.paymentPayload as never, body.paymentRequirements as never);
-    return c.json(result);
+    try {
+      const result = await facilitator.settle(body.paymentPayload as never, body.paymentRequirements as never);
+      return c.json(result);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : "settle failed";
+      return c.json({ success: false, errorReason: reason }, 502 as const);
+    }
   });
 
   return app;
