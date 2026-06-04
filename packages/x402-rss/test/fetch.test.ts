@@ -67,4 +67,19 @@ describe("createX402RssFetch", () => {
     expect(BigInt(auth.value)).toBe(1000000n);
     expect((decoded.payload as { signature: string }).signature).toMatch(/^0x[0-9a-fA-F]+$/);
   });
+
+  it("passes non-402 responses through unchanged without attempting payment", async () => {
+    const fetch = vi.fn(async () => new Response("hi", { status: 200 }));
+    const f = createX402RssFetch({ account: ACCOUNT, fetch: fetch as never });
+    const res = await f("https://example.test/free");
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("hi");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a payment whose amount exceeds maxValue", async () => {
+    const { fetch } = mockResource("999000000"); // 999 USDC > 10 USDC cap
+    const f = createX402RssFetch({ account: ACCOUNT, fetch: fetch as never, maxValue: 10_000_000n });
+    await expect(f("https://example.test/job")).rejects.toThrow(/amount exceeds maxValue/);
+  });
 });
