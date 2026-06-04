@@ -75,6 +75,12 @@ importers:
       '@reineira-os/x402-rss-shared':
         specifier: workspace:*
         version: link:../shared
+      '@x402/core':
+        specifier: ^2.14.0
+        version: 2.14.0
+      '@x402/evm':
+        specifier: ^2.14.0
+        version: 2.14.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
       hono:
         specifier: ^4.6.0
         version: 4.12.23
