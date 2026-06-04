@@ -1,23 +1,20 @@
+import { privateKeyToAccount } from "viem/accounts";
 import { X402 } from "@reineira-os/x402-rss-shared";
+import { createX402RssFetch } from "@reineira-os/x402-rss";
 
 const RESOURCE_URL = process.env.RESOURCE_URL ?? "http://localhost:3000/api/resource";
+const BUYER_PRIVATE_KEY = (process.env.BUYER_PRIVATE_KEY ??
+  "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d") as `0x${string}`;
 
 async function main() {
-  console.log(`[buyer-agent] GET ${RESOURCE_URL}`);
-  const res = await fetch(RESOURCE_URL);
+  const account = privateKeyToAccount(BUYER_PRIVATE_KEY);
+  const fetchPaid = createX402RssFetch({ account });
 
-  if (res.status === 402) {
-    const challenge = await res.json();
-    console.log(`[buyer-agent] 402 PAYMENT REQUIRED (x402 v${X402.version})`);
-    console.log(JSON.stringify(challenge, null, 2));
-
-    // STUB: EIP-3009 receiveWithAuthorization signing + retry-with-x-payment lands in A1 / B (DEV-189/DEV-194)
-    console.log("[buyer-agent] signing + retry-with-payment not implemented yet (A1/B)");
-    return;
-  }
+  console.log(`[buyer-agent] GET ${RESOURCE_URL} (x402 v${X402.version}, payer ${account.address})`);
+  const res = await fetchPaid(RESOURCE_URL);
 
   const body = await res.json();
-  console.log(`[buyer-agent] ${res.status}`);
+  console.log(`[buyer-agent] ${res.status} ${res.status === 200 ? "PAID" : ""}`);
   console.log(JSON.stringify(body, null, 2));
 }
 
