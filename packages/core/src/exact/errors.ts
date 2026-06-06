@@ -1,0 +1,13 @@
+export const ErrInvalidScheme = "invalid_exact_evm_scheme";
+export const ErrNetworkMismatch = "invalid_exact_evm_network_mismatch";
+export const ErrMissingEip712Domain = "invalid_exact_evm_missing_eip712_domain";
+export const ErrAssetMismatch = "invalid_exact_evm_asset_mismatch";
+export const ErrRecipientMismatch = "invalid_exact_evm_recipient_mismatch";
+export const ErrInvalidSignature = "invalid_exact_evm_signature";
+export const ErrValidBeforeExpired = "invalid_exact_evm_payload_authorization_valid_before";
+export const ErrValidAfterInFuture = "invalid_exact_evm_payload_authorization_valid_after";
+export const ErrInvalidAuthorizationValue = "invalid_exact_evm_authorization_value";
+export const ErrTransactionFailed = "invalid_exact_evm_transaction_failed";
+export const ErrEip3009NotSupported = "invalid_exact_evm_eip3009_not_supported";
+export const ErrEip3009NonceAlreadyUsed = "invalid_exact_evm_nonce_already_used";
+export const ErrEip3009InsufficientBalance = "invalid_exact_evm_insufficient_balance";
