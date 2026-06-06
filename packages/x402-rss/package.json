@@ -23,13 +23,11 @@
   },
   "dependencies": {
     "viem": "^2.21.0",
-    "@x402/fetch": "^2.14.0",
-    "@x402/evm": "^2.14.0",
+    "@reineira-os/x402-core": "workspace:*",
     "@reineira-os/x402-rss-shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "@x402/core": "^2.14.0",
     "tsup": "^8.3.0",
     "vitest": "^2.1.0",
     "typescript": "^5.7.0"

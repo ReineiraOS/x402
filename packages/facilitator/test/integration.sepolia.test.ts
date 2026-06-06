@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { privateKeyToAccount } from "viem/accounts";
-import type { PaymentPayload, PaymentRequirements } from "@x402/core/types";
+import type { PaymentPayload, PaymentRequirements } from "@reineira-os/x402-core/types";
 import { ARBITRUM_SEPOLIA, X402 } from "@reineira-os/x402-rss-shared";
 import { createFacilitator } from "../src/facilitator.js";
 

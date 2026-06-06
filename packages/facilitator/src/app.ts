@@ -1,8 +1,8 @@
 import { ARBITRUM_SEPOLIA, X402 } from "@reineira-os/x402-rss-shared";
 import { Hono } from "hono";
-import type { x402Facilitator } from "@x402/core/facilitator";
+import type { X402Facilitator } from "@reineira-os/x402-core/facilitator";
 
-type FacilitatorLike = Pick<x402Facilitator, "verify" | "settle">;
+type FacilitatorLike = Pick<X402Facilitator, "verify" | "settle">;
 
 export function createApp(facilitator: FacilitatorLike): Hono {
   const app = new Hono();

@@ -17,7 +17,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "viem": "^2.21.0",
-    "@x402/core": "^2.14.0",
+    "@reineira-os/x402-core": "workspace:*",
     "@reineira-os/x402-rss": "workspace:*",
     "@reineira-os/x402-rss-shared": "workspace:*"
   },

@@ -1,7 +1,7 @@
 import { createPublicClient, http, type LocalAccount } from "viem";
 import { arbitrumSepolia as arbitrumSepoliaChain } from "viem/chains";
-import { wrapFetchWithPayment, x402Client, type SelectPaymentRequirements } from "@x402/fetch";
-import { ExactEvmScheme, toClientEvmSigner } from "@x402/evm";
+import { wrapFetchWithPayment, x402Client, type SelectPaymentRequirements } from "@reineira-os/x402-core/exact/client";
+import { ExactEvmScheme, toClientEvmSigner } from "@reineira-os/x402-core/exact/client";
 import { arbitrumSepolia } from "./config.js";
 
 export interface CreateX402RssFetchOptions {

@@ -20,15 +20,15 @@ importers:
 
   apps/demo:
     dependencies:
+      '@reineira-os/x402-core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@reineira-os/x402-rss':
         specifier: workspace:*
         version: link:../../packages/x402-rss
       '@reineira-os/x402-rss-shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@x402/core':
-        specifier: ^2.14.0
-        version: 2.14.0
       next:
         specifier: ^16.0.0
         version: 16.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -103,15 +103,12 @@ importers:
       '@hono/node-server':
         specifier: ^1.13.0
         version: 1.19.14(hono@4.12.23)
+      '@reineira-os/x402-core':
+        specifier: workspace:*
+        version: link:../core
       '@reineira-os/x402-rss-shared':
         specifier: workspace:*
         version: link:../shared
-      '@x402/core':
-        specifier: ^2.14.0
-        version: 2.14.0
-      '@x402/evm':
-        specifier: ^2.14.0
-        version: 2.14.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
       hono:
         specifier: ^4.6.0
         version: 4.12.23
@@ -159,15 +156,12 @@ importers:
 
   packages/x402-rss:
     dependencies:
+      '@reineira-os/x402-core':
+        specifier: workspace:*
+        version: link:../core
       '@reineira-os/x402-rss-shared':
         specifier: workspace:*
         version: link:../shared
-      '@x402/evm':
-        specifier: ^2.14.0
-        version: 2.14.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
-      '@x402/fetch':
-        specifier: ^2.14.0
-        version: 2.14.0
       viem:
         specifier: ^2.21.0
         version: 2.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.3)
@@ -175,9 +169,6 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.19
-      '@x402/core':
-        specifier: ^2.14.0
-        version: 2.14.0
       tsup:
         specifier: ^8.3.0
         version: 8.5.1(postcss@8.5.15)(tsx@4.22.4)(typescript@5.9.3)

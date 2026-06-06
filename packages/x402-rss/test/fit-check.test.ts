@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { privateKeyToAccount } from "viem/accounts";
 import { createPublicClient, http } from "viem";
 import { arbitrumSepolia } from "viem/chains";
-import { wrapFetchWithPayment, x402Client } from "@x402/fetch";
-import { ExactEvmScheme, toClientEvmSigner } from "@x402/evm";
+import { wrapFetchWithPayment, x402Client } from "@reineira-os/x402-core/exact/client";
+import { ExactEvmScheme, toClientEvmSigner } from "@reineira-os/x402-core/exact/client";
 
 describe("x402 v2 client reuse fit-check (Arbitrum Sepolia)", () => {
   it("registers an exact EVM scheme for eip155:421614 and wraps fetch", () => {

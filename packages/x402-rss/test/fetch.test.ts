@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { privateKeyToAccount } from "viem/accounts";
-import { encodePaymentRequiredHeader, decodePaymentSignatureHeader } from "@x402/core/http";
+import { encodePaymentRequiredHeader, decodePaymentSignatureHeader } from "@reineira-os/x402-core/http";
 import { createX402RssFetch } from "../src/fetch.js";
 import { arbitrumSepolia } from "../src/config.js";
 

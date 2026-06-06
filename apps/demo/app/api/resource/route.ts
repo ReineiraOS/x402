@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ARBITRUM_SEPOLIA, X402 } from "@reineira-os/x402-rss-shared";
-import { decodePaymentSignatureHeader, encodePaymentRequiredHeader } from "@x402/core/http";
+import { decodePaymentSignatureHeader, encodePaymentRequiredHeader } from "@reineira-os/x402-core/http";
 
 export const dynamic = "force-dynamic";
 
