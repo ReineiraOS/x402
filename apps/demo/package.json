@@ -13,6 +13,7 @@
     "agent": "tsx scripts/agent-client.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.102.0",
     "next": "^16.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
