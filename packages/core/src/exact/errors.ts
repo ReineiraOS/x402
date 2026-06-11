@@ -11,3 +11,6 @@ export const ErrTransactionFailed = "invalid_exact_evm_transaction_failed";
 export const ErrEip3009NotSupported = "invalid_exact_evm_eip3009_not_supported";
 export const ErrEip3009NonceAlreadyUsed = "invalid_exact_evm_nonce_already_used";
 export const ErrEip3009InsufficientBalance = "invalid_exact_evm_insufficient_balance";
+export const ErrEscrowNonceMismatch = "invalid_exact_evm_escrow_nonce_mismatch";
+export const ErrEscrowReceiverMismatch = "invalid_exact_evm_escrow_receiver_mismatch";
+export const ErrEscrowNotFound = "invalid_exact_evm_escrow_not_found";

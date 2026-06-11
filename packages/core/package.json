@@ -23,6 +23,10 @@
       "types": "./dist/exact/client.d.ts",
       "import": "./dist/exact/client.js"
     },
+    "./exact/escrow": {
+      "types": "./dist/exact/escrow.d.ts",
+      "import": "./dist/exact/escrow.js"
+    },
     "./exact/verify": {
       "types": "./dist/exact/verify.d.ts",
       "import": "./dist/exact/verify.js"

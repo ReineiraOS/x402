@@ -3,7 +3,7 @@ import {
   parseSignature,
   type Hex,
 } from "viem";
-import { erc3009Abi } from "@reineira-os/x402-rss-shared";
+import { erc3009Abi, x402EscrowReceiverAbi } from "@reineira-os/x402-rss-shared";
 import type {
   ExactEvmAuthorization,
   ExactEvmPayload,
@@ -12,6 +12,7 @@ import type {
   SettleResponse,
 } from "../types.js";
 import { verifyExact, type ReadContractClient } from "./verify.js";
+import { encodePaymentAuthorization, getEscrowExtra } from "./escrow.js";
 import { ErrInvalidScheme, ErrTransactionFailed } from "./errors.js";
 
 export type FacilitatorEvmSigner = {
@@ -96,25 +97,39 @@ export async function settleExact(
   }
 
   const erc20Address = getAddress(requirements.asset);
+  const escrowExtra = getEscrowExtra(requirements);
 
   try {
-    const { v, r, s } = splitSignature(exact.signature as Hex);
-    const hash = await ctx.signer.writeContract({
-      address: erc20Address,
-      abi: erc3009Abi as readonly unknown[],
-      functionName: "transferWithAuthorization",
-      args: [
-        getAddress(auth.from),
-        getAddress(auth.to),
-        BigInt(auth.value),
-        BigInt(auth.validAfter),
-        BigInt(auth.validBefore),
-        auth.nonce,
-        Number(v),
-        r,
-        s,
-      ],
-    });
+    let hash: `0x${string}`;
+    if (escrowExtra) {
+      hash = await ctx.signer.writeContract({
+        address: escrowExtra.receiver,
+        abi: x402EscrowReceiverAbi as readonly unknown[],
+        functionName: "settle",
+        args: [
+          BigInt(escrowExtra.escrowId),
+          encodePaymentAuthorization(auth, escrowExtra.salt, exact.signature as Hex),
+        ],
+      });
+    } else {
+      const { v, r, s } = splitSignature(exact.signature as Hex);
+      hash = await ctx.signer.writeContract({
+        address: erc20Address,
+        abi: erc3009Abi as readonly unknown[],
+        functionName: "transferWithAuthorization",
+        args: [
+          getAddress(auth.from),
+          getAddress(auth.to),
+          BigInt(auth.value),
+          BigInt(auth.validAfter),
+          BigInt(auth.validBefore),
+          auth.nonce,
+          Number(v),
+          r,
+          s,
+        ],
+      });
+    }
 
     const receipt = await ctx.signer.waitForTransactionReceipt({ hash });
     if (receipt.status !== "success") {

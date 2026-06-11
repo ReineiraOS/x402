@@ -6,6 +6,7 @@ export default defineConfig({
     "src/types.ts",
     "src/http.ts",
     "src/exact/client.ts",
+    "src/exact/escrow.ts",
     "src/exact/verify.ts",
     "src/exact/settle.ts",
     "src/facilitator.ts",

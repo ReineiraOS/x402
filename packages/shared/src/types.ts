@@ -21,3 +21,10 @@ export type DealStatus =
   | "released"
   | "disputed"
   | "refunded";
+
+export interface X402EscrowExtra {
+  escrowId: string;
+  salt: Hex;
+  receiver: Address;
+  escrow: Address;
+}

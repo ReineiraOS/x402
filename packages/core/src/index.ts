@@ -29,6 +29,14 @@ export {
 export { verifyExact, type VerifyExactContext } from "./exact/verify.js";
 
 export {
+  getEscrowExtra,
+  deriveEscrowNonce,
+  encodePaymentAuthorization,
+  ReceiveWithAuthorizationTypes,
+  type EscrowPaymentExtra,
+} from "./exact/escrow.js";
+
+export {
   toFacilitatorEvmSigner,
   settleExact,
   type FacilitatorEvmSigner,

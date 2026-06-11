@@ -7,13 +7,110 @@ import {
   decodePaymentRequiredHeader,
   encodePaymentSignatureHeader,
 } from "@reineira-os/x402-core/http";
-import { ExactEvmScheme, toClientEvmSigner } from "@reineira-os/x402-core/exact/client";
+import {
+  ExactEvmScheme,
+  toClientEvmSigner,
+  type ClientEvmSigner,
+} from "@reineira-os/x402-core/exact/client";
+import { getEscrowExtra } from "@reineira-os/x402-core/exact/escrow";
 import type { PaymentPayload, PaymentRequired } from "@reineira-os/x402-core/types";
+import { createAgentWallet } from "../../../lib/agentWallet";
+import {
+  getAgent,
+  recordSpend,
+  markSpendCovered,
+  updateSpendTranscript,
+  type AgentRecord,
+  type TranscriptLine,
+} from "../../../lib/agentStore";
+import { getResource, type ResourceDef } from "../../../lib/resources";
+import { getTreasurySigner, ensureTreasuryDeployed } from "../../../lib/sessionWallet";
+import { addSpent, getSession } from "../../../lib/sessionStore";
+import { attachCoverage } from "../../../lib/coverage";
+
+const COVERAGE_PLUGIN_ID = "delivery-coverage-policy";
 
 export const dynamic = "force-dynamic";
 
+function shortAddr(addr: string): string {
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
+
 type RunEvent = Record<string, unknown>;
 type Emit = (event: RunEvent) => void;
+
+function str(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+// Mirrors the console's stream handling so we can persist a faithful transcript of
+// how the agent reasoned for each purchase (auditability of autonomous spend).
+function makeTranscript() {
+  const lines: TranscriptLine[] = [];
+  let buf = "";
+  let bufFinal = false;
+  const flush = () => {
+    if (buf.trim()) lines.push({ kind: bufFinal ? "result" : "thinking", text: buf.trim() });
+    buf = "";
+    bufFinal = false;
+  };
+  return {
+    lines,
+    flush,
+    capture(e: RunEvent) {
+      if (e.kind === "deal") {
+        flush();
+        lines.push({
+          kind: "deal",
+          text: [str(e.deal), str(e.price), str(e.network)].filter(Boolean).join(" · "),
+        });
+        return;
+      }
+      if (e.kind === "escrow") {
+        flush();
+        lines.push({ kind: "escrow", text: `escrow #${str(e.escrowId) ?? "—"}` });
+        return;
+      }
+      if (e.kind === "coverage") {
+        flush();
+        const id = str(e.coverageId);
+        const status = str(e.status);
+        lines.push({
+          kind: "coverage",
+          text:
+            status === "active"
+              ? `coverage #${id ?? "—"} active · payout on delivery breach`
+              : `coverage ${status ?? "pending"} · payout pending one-time setup (testnet)`,
+          tx: str(e.tx) ?? null,
+        });
+        return;
+      }
+      if (e.zone === "buyer" && e.streamEnd) {
+        flush();
+        return;
+      }
+      if (e.zone === "buyer" && e.stream) {
+        buf += str(e.msg) ?? "";
+        bufFinal = !!e.final;
+        return;
+      }
+      if (e.zone === "buyer" && str(e.msg)) {
+        flush();
+        lines.push({ kind: "action", text: str(e.msg)! });
+        return;
+      }
+      if (e.zone === "provider" && str(e.msg)) {
+        flush();
+        lines.push({ kind: "delivery", text: str(e.msg)!, detail: str(e.detail) ?? null });
+        return;
+      }
+      if (e.zone === "system" && str(e.msg)) {
+        flush();
+        lines.push({ kind: "system", text: str(e.msg)!, tx: str(e.tx) ?? null });
+      }
+    },
+  };
+}
 
 // Cosmetic pacing between narration steps so the "theater" is readable.
 // The settlement itself is real and on-chain; these delays only slow the storytelling.
@@ -21,9 +118,6 @@ const STEP_MS = 850;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const MODEL = "claude-haiku-4-5-20251001";
-const AGENT_BUDGET_USDC = "1.00";
-const AGENT_GOAL =
-  "Give a one-line read on current ETH market conditions, grounded in fresh on-chain + price data.";
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -53,18 +147,110 @@ type LiveReport = { result?: string } & Record<string, unknown>;
 // settle via the facilitator → live report. Emits the same system/provider/deal/tx
 // events the demo has always emitted, and returns the freshly-fetched artifact so
 // the agent reasons over real data (never a faked tool result).
-async function runX402Payment(resource: string, emit: Emit): Promise<LiveReport> {
+async function createBuyerSigner(
+  emit: Emit,
+  agent: AgentRecord | null,
+  treasury: string | null,
+): Promise<ClientEvmSigner> {
+  // Model B: the agent pays from the passkey-owned treasury via its session key —
+  // no per-agent wallet. The session key signs the EIP-3009 authorization.
+  if (treasury) {
+    const t = await getTreasurySigner(treasury);
+    if (!t) {
+      throw new Error(
+        "Treasury has no spend authorization — open the treasury panel and authorize a budget first.",
+      );
+    }
+    // A fresh treasury is counterfactual; activate it on-chain once so its EIP-3009
+    // signature verifies over ERC-1271.
+    try {
+      const { deployedNow, txHash } = await ensureTreasuryDeployed(treasury);
+      if (deployedNow) {
+        emit({
+          zone: "buyer",
+          msg: "Activating treasury on-chain (deploy + session key) — gas sponsored",
+          tx: txHash,
+          arbiscan: txHash ? `https://sepolia.arbiscan.io/tx/${txHash}` : undefined,
+        });
+      }
+    } catch (error) {
+      throw new Error(
+        `Could not activate the treasury on-chain (${errorMessage(error)}). If this is an older passkey ` +
+          `wallet, open the treasury panel → Reset → Use existing to re-create it on the patched validator.`,
+      );
+    }
+    const remaining =
+      t.budgetAtomic != null ? BigInt(t.budgetAtomic) - BigInt(t.spentAtomic) : null;
+    emit({
+      zone: "buyer",
+      msg:
+        `${agent ? `Agent "${agent.name}"` : "Agent"} pays from the passkey treasury ` +
+        `${shortAddr(t.signer.address)} via its session key` +
+        (remaining != null ? ` · ${(Number(remaining) / 1e6).toFixed(2)} USDC left in budget` : ""),
+    });
+    return t.signer;
+  }
+
+  const agentKey = agent?.ownerPrivateKey ?? process.env.AGENT_PRIVATE_KEY;
+  if (agentKey) {
+    const wallet = await createAgentWallet(agentKey as `0x${string}`);
+    emit({
+      zone: "buyer",
+      msg: `${agent ? `Agent "${agent.name}"` : "Agent"} smart wallet (ZeroDev Kernel): ${wallet.address}`,
+    });
+    const { deployedNow, txHash } = await wallet.deployIfNeeded();
+    if (deployedNow) {
+      emit({
+        zone: "buyer",
+        msg: "Smart wallet deployed on-chain (gas sponsored by paymaster)",
+        tx: txHash,
+        arbiscan: txHash ? `https://sepolia.arbiscan.io/tx/${txHash}` : undefined,
+      });
+    }
+    const balance = await wallet.usdcBalance();
+    emit({
+      zone: "buyer",
+      msg: `Wallet balance: ${(Number(balance) / 1e6).toFixed(2)} USDC`,
+    });
+    if (balance === 0n) {
+      emit({
+        zone: "system",
+        level: "error",
+        msg: `Agent wallet ${wallet.address} holds 0 USDC — faucet testnet USDC to it before running.`,
+      });
+    }
+    return wallet.signer;
+  }
+
   const buyerKey = process.env.BUYER_PRIVATE_KEY;
   if (!buyerKey) {
-    throw new Error("BUYER_PRIVATE_KEY is not set");
+    throw new Error("Neither an agent wallet nor BUYER_PRIVATE_KEY is configured");
   }
   const account = privateKeyToAccount(buyerKey as `0x${string}`);
   const publicClient = createPublicClient({
     chain: arbitrumSepolia,
     transport: http(process.env.ARBITRUM_SEPOLIA_RPC_URL),
   });
+  return toClientEvmSigner(account, publicClient);
+}
 
-  const unpaid = await fetch(resource, { headers: { accept: "application/json" } });
+async function runX402Payment(
+  resource: string,
+  emit: Emit,
+  agent: AgentRecord | null,
+  resourceId: string,
+  recorded: string[],
+  treasury: string | null,
+): Promise<LiveReport> {
+  const signer = await createBuyerSigner(emit, agent, treasury);
+
+  const wantsCoverage = !!agent?.pluginIds.includes(COVERAGE_PLUGIN_ID);
+  const params = new URLSearchParams({ resourceId });
+  if (agent?.deadlineSeconds) params.set("deadlineSeconds", String(agent.deadlineSeconds));
+  if (wantsCoverage) params.set("coverage", "1");
+  const resourceUrl = `${resource}?${params.toString()}`;
+
+  const unpaid = await fetch(resourceUrl, { headers: { accept: "application/json" } });
   if (unpaid.status !== 402) {
     throw new Error(`expected 402 from resource, got ${unpaid.status}`);
   }
@@ -78,22 +264,45 @@ async function runX402Payment(resource: string, emit: Emit): Promise<LiveReport>
     throw new Error("no payment requirements offered");
   }
 
+  if (treasury) {
+    const session = await getSession(treasury);
+    if (session?.budgetAtomic) {
+      const remaining = BigInt(session.budgetAtomic) - BigInt(session.spentAtomic ?? "0");
+      if (BigInt(requirements.amount) > remaining) {
+        throw new Error(
+          `over treasury spend budget: ${(Number(remaining) / 1e6).toFixed(2)} USDC left, ` +
+            `this resource costs ${(Number(requirements.amount) / 1e6).toFixed(2)} — re-authorize a larger budget`,
+        );
+      }
+    }
+  }
+
   const price = formatUsdc(requirements.amount);
   const network = networkLabel(requirements.network);
+  const escrowExtra = getEscrowExtra(requirements);
   emit({
     kind: "deal",
     deal: paymentRequired.resource?.description ?? "x402 resource",
     price,
     network,
   });
+  if (escrowExtra) {
+    emit({
+      kind: "escrow",
+      escrowId: escrowExtra.escrowId,
+      escrowDeadline: requirements.extra?.escrowDeadline ?? null,
+    });
+  }
   await sleep(STEP_MS);
   emit({
     zone: "system",
-    msg: `402 Payment Required — provider asks ${price} for the call`,
+    msg: escrowExtra
+      ? `402 Payment Required — provider asks ${price}, payment goes to escrow #${escrowExtra.escrowId} (not directly to the seller)`
+      : `402 Payment Required — provider asks ${price} for the call`,
   });
   await sleep(STEP_MS);
 
-  const scheme = new ExactEvmScheme(toClientEvmSigner(account, publicClient));
+  const scheme = new ExactEvmScheme(signer);
   const partial = await scheme.createPaymentPayload(paymentRequired.x402Version, requirements);
   const payment: PaymentPayload = {
     x402Version: partial.x402Version,
@@ -102,14 +311,21 @@ async function runX402Payment(resource: string, emit: Emit): Promise<LiveReport>
     payload: partial.payload as unknown as Record<string, unknown>,
     extensions: paymentRequired.extensions,
   };
-  emit({ zone: "buyer", msg: "Signs the payment — EIP-3009, no gas, no wallet popup" });
+  emit({
+    zone: "buyer",
+    msg: escrowExtra
+      ? "Signs the payment from its smart wallet — EIP-3009 ReceiveWithAuthorization, nonce bound to the escrow"
+      : "Signs the payment — EIP-3009, no gas, no wallet popup",
+  });
   await sleep(STEP_MS);
 
   emit({
     zone: "system",
-    msg: "Facilitator verifies the signature, then settles on Arbitrum (pays gas for the buyer)…",
+    msg: escrowExtra
+      ? "Facilitator verifies the smart-wallet signature (ERC-1271), then settles into the escrow on Arbitrum…"
+      : "Facilitator verifies the signature, then settles on Arbitrum (pays gas for the buyer)…",
   });
-  const paid = await fetch(resource, {
+  const paid = await fetch(resourceUrl, {
     headers: {
       accept: "application/json",
       "payment-signature": encodePaymentSignatureHeader(payment),
@@ -126,17 +342,99 @@ async function runX402Payment(resource: string, emit: Emit): Promise<LiveReport>
   }
 
   const tx = paidBody.settlement?.transaction;
+
+  if (agent) {
+    const def = getResource(resourceId);
+    const escrowDeadline = requirements.extra?.escrowDeadline;
+    const ts = new Date().toISOString();
+    recorded.push(ts);
+    await recordSpend(agent.id, {
+      ts,
+      escrowId: escrowExtra?.escrowId ?? null,
+      amountAtomic: requirements.amount,
+      tx: tx ?? null,
+      resource,
+      description: paymentRequired.resource?.description ?? "x402 resource",
+      resourceId,
+      resourceName: def.name,
+      result: paidBody.artifact?.result ?? null,
+      artifact: paidBody.artifact ?? null,
+      deadline: typeof escrowDeadline === "number" ? escrowDeadline : null,
+      released: false,
+      releaseTx: null,
+    });
+  }
+
+  if (treasury) {
+    await addSpent(treasury, BigInt(requirements.amount));
+  }
+
   await sleep(STEP_MS);
   emit({
     zone: "system",
-    msg: "Paid ✓ — USDC moved Buyer → Provider",
+    msg: escrowExtra
+      ? `Paid ✓ — USDC moved ${treasury ? "treasury" : "agent wallet"} → Escrow #${escrowExtra.escrowId} (seller is paid when the release condition is met)`
+      : "Paid ✓ — USDC moved Buyer → Provider",
     tx,
     arbiscan: tx ? `https://sepolia.arbiscan.io/tx/${tx}` : undefined,
   });
   await sleep(STEP_MS);
+
+  if (wantsCoverage && escrowExtra && agent) {
+    const holder = (treasury ?? agent.address) as `0x${string}`;
+    const escrowDeadline = requirements.extra?.escrowDeadline;
+    const expiry =
+      typeof escrowDeadline === "number" ? escrowDeadline : Math.floor(Date.now() / 1000) + 300;
+    emit({
+      zone: "buyer",
+      msg: "Buys delivery coverage against the escrow — DeliveryPolicy on the underwriter pool",
+    });
+    try {
+      const cov = await attachCoverage({
+        escrowId: escrowExtra.escrowId,
+        amountAtomic: requirements.amount,
+        expiry,
+        holder,
+      });
+      await markSpendCovered(escrowExtra.escrowId, {
+        coverageId: cov.coverageId,
+        tx: cov.tx,
+        pool: cov.pool,
+        policy: cov.policy,
+        holder: cov.holder,
+        expiry: cov.expiry,
+        amountAtomic: cov.amountAtomic,
+        status: cov.status,
+        note: cov.note,
+      });
+      if (cov.status === "active") {
+        emit({ kind: "coverage", coverageId: cov.coverageId, tx: cov.tx, status: cov.status });
+        emit({
+          zone: "system",
+          msg: `Coverage active ✓ — coverage #${cov.coverageId} bound to escrow #${escrowExtra.escrowId} (buyer can claim if the seller breaches delivery)`,
+          tx: cov.tx ?? undefined,
+          arbiscan: cov.tx ? `https://sepolia.arbiscan.io/tx/${cov.tx}` : undefined,
+        });
+      } else if (cov.status === "pending-setup") {
+        emit({ kind: "coverage", status: cov.status });
+        emit({
+          zone: "system",
+          msg: `Coverage pending one-time protocol setup — ${cov.note ?? "owner setup not yet applied"}. The purchase itself is unaffected.`,
+        });
+      } else {
+        emit({ zone: "system", level: "error", msg: cov.note ?? "coverage attach failed" });
+      }
+    } catch (covErr) {
+      emit({ zone: "system", level: "error", msg: `coverage attach error: ${errorMessage(covErr)}` });
+    }
+    await sleep(STEP_MS);
+  }
+
+  emit({ zone: "provider", msg: "Provider received the settlement — preparing the resource…" });
+  await sleep(STEP_MS * 2);
   emit({
     zone: "provider",
-    msg: "Delivers the live data report",
+    msg: "Provider delivers the live data report",
     detail: paidBody.artifact?.result,
     artifact: paidBody.artifact,
   });
@@ -163,35 +461,108 @@ const FETCH_LIVE_REPORT_TOOL: Tool = {
   },
 };
 
-const SYSTEM_PROMPT =
-  `You are an autonomous buying agent operating with a budget of ${AGENT_BUDGET_USDC} USDC.\n` +
-  `Your task: ${AGENT_GOAL}\n\n` +
-  "You have one tool, fetch_live_report, which buys a live on-chain + ETH-price report " +
-  "for about 0.10 USDC. You do not have current data, so to do the task well you must " +
-  "decide to buy the report. Think out loud briefly (one or two short sentences) about " +
-  "the decision before you call the tool. After the report arrives, give a single crisp " +
-  "one-line read on current ETH market conditions that cites the concrete numbers you paid for. " +
-  "Keep all output terse; this is a live demo.";
+function buildSystemPrompt(
+  agent: AgentRecord | null,
+  resource: ResourceDef,
+  remainingBudgetUsdc: string | null,
+): string {
+  const price = (Number(resource.priceAtomic) / 1e6).toFixed(2);
+  const budgetLine =
+    remainingBudgetUsdc != null
+      ? `Your treasury has ${remainingBudgetUsdc} USDC of authorized spend budget left.`
+      : `You operate within a small autonomous spend budget.`;
+  const base =
+    `You are an autonomous buying agent settling payments over x402.\n` +
+    `Task: ${resource.task}\n` +
+    `${budgetLine}\n` +
+    `A live data report "${resource.name}" is available for about ${price} USDC, paid into a plugin-gated escrow ` +
+    `(funds are held, not sent straight to the seller). You do not currently have this data.\n\n` +
+    `Decide — guided by your standing instructions and your remaining budget — whether buying it is worth it right now. ` +
+    `Think out loud briefly (1–2 sentences, in your own voice). Then EITHER call fetch_live_report to buy it, ` +
+    `OR, if you judge it is not worth it (too costly for your budget, or against your instructions), say why in one line and do NOT call the tool. ` +
+    `If you buy, once the data arrives give a single crisp read in your own voice that cites the concrete numbers. Keep output terse; this is a live demo.`;
+  if (agent?.prePrompt) {
+    return `Your standing instructions — act in this persona, let it drive your decision and tone:\n${agent.prePrompt}\n\n${base}`;
+  }
+  return base;
+}
 
 export async function GET(request: Request) {
   const encoder = new TextEncoder();
   const resource = resourceUrl(request);
+  const url = new URL(request.url);
+  const resourceDef = getResource(url.searchParams.get("resourceId"));
+  const treasury = url.searchParams.get("treasury");
+
+  let agent: AgentRecord | null = null;
+  try {
+    const agentId = url.searchParams.get("agentId");
+    if (agentId) {
+      agent = await getAgent(agentId);
+      if (!agent) {
+        return new Response(JSON.stringify({ error: "agent not found" }), {
+          status: 404,
+          headers: { "content-type": "application/json" },
+        });
+      }
+    }
+  } catch {
+    agent = null;
+  }
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      const transcript = makeTranscript();
       const emit: Emit = (event) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        transcript.capture(event);
+      };
+      const recorded: string[] = [];
+      const finishRun = async () => {
+        transcript.flush();
+        if (agent && recorded.length) {
+          for (const ts of recorded) {
+            await updateSpendTranscript(agent.id, ts, transcript.lines);
+          }
+        }
+        emit({ done: true });
       };
 
       try {
         const apiKey = process.env.ANTHROPIC_API_KEY;
         if (!apiKey) {
+          // No LLM key: run a scripted buy so the full on-chain x402 → escrow flow is
+          // still testable end-to-end in the browser (the reasoning narration is canned).
           emit({
-            zone: "system",
-            level: "error",
-            msg: "ANTHROPIC_API_KEY is not set — add it to apps/demo/.env.local to run the agent.",
+            zone: "buyer",
+            msg: `${agent ? `Agent "${agent.name}"` : "Agent"}: no LLM key set — running a scripted buy to demonstrate the live x402 → escrow settlement.`,
+            stream: false,
           });
+          await sleep(STEP_MS);
+          emit({ zone: "buyer", msg: "Decides to buy the live report — initiating x402 payment" });
+          await sleep(STEP_MS);
+          const report = await runX402Payment(resource, emit, agent, resourceDef.id, recorded, treasury);
+          await sleep(STEP_MS);
+          emit({
+            zone: "buyer",
+            msg: report.result
+              ? `Market read: ${report.result}`
+              : "Live report acquired.",
+            stream: true,
+            final: true,
+          });
+          emit({ zone: "buyer", streamEnd: true, final: true });
+          await finishRun();
           return;
+        }
+
+        let remainingBudgetUsdc: string | null = null;
+        if (treasury) {
+          const session = await getSession(treasury);
+          if (session?.budgetAtomic) {
+            const rem = BigInt(session.budgetAtomic) - BigInt(session.spentAtomic ?? "0");
+            remainingBudgetUsdc = (Number(rem > 0n ? rem : 0n) / 1e6).toFixed(2);
+          }
         }
 
         const anthropic = new Anthropic({ apiKey });
@@ -199,7 +570,7 @@ export async function GET(request: Request) {
           {
             role: "user",
             content:
-              "Begin. Decide whether you need fresh market data for the task, then act.",
+              "Begin. Decide — in your persona, mindful of your budget — whether to buy the report, then act.",
           },
         ];
 
@@ -214,7 +585,7 @@ export async function GET(request: Request) {
           const modelStream = anthropic.messages.stream({
             model: MODEL,
             max_tokens: 600,
-            system: SYSTEM_PROMPT,
+            system: buildSystemPrompt(agent, resourceDef, remainingBudgetUsdc),
             tools: [FETCH_LIVE_REPORT_TOOL],
             messages,
           });
@@ -237,8 +608,12 @@ export async function GET(request: Request) {
           );
 
           if (toolUses.length === 0) {
-            // No tool call: the model produced its (final) answer — we are done.
-            emit({ done: true });
+            // No tool call: the model produced its (final) answer. If it never bought,
+            // it deliberately declined (persona/budget) — surface that as the outcome.
+            if (!paid) {
+              emit({ zone: "system", msg: "Agent decided not to buy — no payment made." });
+            }
+            await finishRun();
             return;
           }
 
@@ -259,7 +634,7 @@ export async function GET(request: Request) {
             emit({ zone: "buyer", msg: "Decides to buy the live report — initiating x402 payment" });
             await sleep(STEP_MS);
 
-            const report = await runX402Payment(resource, emit);
+            const report = await runX402Payment(resource, emit, agent, resourceDef.id, recorded, treasury);
             paid = true;
 
             toolResults.push({
@@ -273,7 +648,7 @@ export async function GET(request: Request) {
         }
 
         // Safety net: loop exhausted without a final text-only turn.
-        emit({ done: true });
+        await finishRun();
       } catch (error) {
         emit({ zone: "system", level: "error", msg: errorMessage(error) });
       } finally {

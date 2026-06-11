@@ -12,6 +12,11 @@ import type {
   PaymentRequirements,
   SelectPaymentRequirements,
 } from "../types.js";
+import {
+  deriveEscrowNonce,
+  getEscrowExtra,
+  ReceiveWithAuthorizationTypes,
+} from "./escrow.js";
 
 export type ClientEvmSigner = {
   readonly address: `0x${string}`;
@@ -91,6 +96,8 @@ export class ExactEvmScheme {
       );
     }
 
+    const escrowExtra = getEscrowExtra(requirements);
+
     const now = Math.floor(Date.now() / 1000);
     const authorization: ExactEvmAuthorization = {
       from: this.signer.address,
@@ -98,7 +105,9 @@ export class ExactEvmScheme {
       value: requirements.amount,
       validAfter: (now - 600).toString(),
       validBefore: (now + requirements.maxTimeoutSeconds).toString(),
-      nonce: createNonce(),
+      nonce: escrowExtra
+        ? deriveEscrowNonce(BigInt(escrowExtra.escrowId), escrowExtra.salt)
+        : createNonce(),
     };
 
     const chainId = getEvmChainId(requirements.network);
@@ -117,10 +126,15 @@ export class ExactEvmScheme {
       nonce: authorization.nonce,
     };
 
+    const types = escrowExtra
+      ? ReceiveWithAuthorizationTypes
+      : TransferWithAuthorizationTypes;
     const signature = await this.signer.signTypedData({
       domain,
-      types: TransferWithAuthorizationTypes as unknown as Record<string, unknown>,
-      primaryType: "TransferWithAuthorization",
+      types: types as unknown as Record<string, unknown>,
+      primaryType: escrowExtra
+        ? "ReceiveWithAuthorization"
+        : "TransferWithAuthorization",
       message,
     });
 

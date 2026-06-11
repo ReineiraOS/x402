@@ -2,5 +2,14 @@ packages:
   - "packages/*"
   - "apps/*"
 
+allowBuilds:
+  bufferutil: true
+  esbuild: true
+  sharp: true
+  utf-8-validate: true
+
 onlyBuiltDependencies:
   - esbuild
+  - bufferutil
+  - sharp
+  - utf-8-validate

@@ -5,3 +5,5 @@ export const X402 = {
   eip712: { name: "USD Coin", version: "2" },
   method: "transferWithAuthorization",
 } as const;
+
+export const X402_ESCROW_METHOD = "receiveWithAuthorization" as const;

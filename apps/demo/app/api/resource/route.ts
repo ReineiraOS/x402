@@ -2,36 +2,68 @@ import { NextResponse } from "next/server";
 import { createPublicClient, http, formatGwei } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import { ARBITRUM_SEPOLIA, X402 } from "@reineira-os/x402-rss-shared";
+import type { X402EscrowExtra } from "@reineira-os/x402-rss-shared";
 import {
   decodePaymentSignatureHeader,
   encodePaymentRequiredHeader,
   encodePaymentResponseHeader,
 } from "@reineira-os/x402-core/http";
 import type { SettleResponse, VerifyResponse } from "@reineira-os/x402-core/types";
+import {
+  createEscrowForSale,
+  getSellerEscrowConfig,
+  validateIssuedEscrow,
+} from "../../../lib/sellerEscrow";
+import { getResource } from "../../../lib/resources";
 
 export const dynamic = "force-dynamic";
 
-const PRICE_USDC_ATOMIC = "100000";
 const PAY_TO = "0x000000000000000000000000000000000000dEaD";
 
-function buildPaymentRequired() {
+async function buildPaymentRequired(deadlineSeconds?: number, resourceId?: string, coverage = false) {
+  const escrowConfig = getSellerEscrowConfig();
+  const resource = getResource(resourceId);
+
+  let payTo: string = PAY_TO;
+  let extra: Record<string, unknown> = {
+    name: X402.eip712.name,
+    version: X402.eip712.version,
+  };
+
+  if (escrowConfig) {
+    const issued = await createEscrowForSale(
+      escrowConfig,
+      BigInt(resource.priceAtomic),
+      deadlineSeconds,
+      coverage,
+    );
+    payTo = issued.extra.receiver;
+    extra = {
+      ...extra,
+      escrow: issued.extra,
+      escrowDeadline: issued.deadline,
+      resourceId: resource.id,
+      coverage,
+    };
+  }
+
   return {
     x402Version: X402.version,
     error: "payment required",
     resource: {
       url: "/api/resource",
-      description: "Live on-chain data report — Arbitrum Sepolia block + ETH price",
+      description: resource.description,
       mimeType: "application/json",
     },
     accepts: [
       {
         scheme: X402.scheme,
         network: X402.network,
-        amount: PRICE_USDC_ATOMIC,
+        amount: resource.priceAtomic,
         asset: ARBITRUM_SEPOLIA.usdc,
-        payTo: PAY_TO,
+        payTo,
         maxTimeoutSeconds: 120,
-        extra: { name: X402.eip712.name, version: X402.eip712.version },
+        extra,
       },
     ],
   };
@@ -90,9 +122,22 @@ async function fetchLiveReport() {
 
 export async function GET(request: Request) {
   const paymentHeader = request.headers.get("payment-signature");
+  const url = new URL(request.url);
+  const deadlineSeconds = Number(url.searchParams.get("deadlineSeconds")) || undefined;
+  const resourceId = url.searchParams.get("resourceId") ?? undefined;
+  const coverage = url.searchParams.get("coverage") === "1";
+  const resource = getResource(resourceId);
 
   if (!paymentHeader) {
-    const paymentRequired = buildPaymentRequired();
+    let paymentRequired: Awaited<ReturnType<typeof buildPaymentRequired>>;
+    try {
+      paymentRequired = await buildPaymentRequired(deadlineSeconds, resourceId, coverage);
+    } catch (error) {
+      return NextResponse.json(
+        { error: "failed to open escrow for sale", detail: errorMessage(error) },
+        { status: 500 },
+      );
+    }
     return NextResponse.json(paymentRequired, {
       status: 402,
       headers: {
@@ -111,6 +156,31 @@ export async function GET(request: Request) {
   }
   if (!payment.accepted) {
     return NextResponse.json({ error: "invalid payment payload" }, { status: 400 });
+  }
+
+  const escrowConfig = getSellerEscrowConfig();
+  if (escrowConfig) {
+    const acceptedExtra = payment.accepted.extra?.escrow as
+      | X402EscrowExtra
+      | undefined;
+    if (!acceptedExtra) {
+      return NextResponse.json(
+        { error: "escrow payment required: missing escrow extra" },
+        { status: 400 },
+      );
+    }
+    const validation = await validateIssuedEscrow(
+      escrowConfig,
+      acceptedExtra,
+      BigInt(resource.priceAtomic),
+      coverage,
+    );
+    if (!validation.ok) {
+      return NextResponse.json(
+        { error: `escrow validation failed: ${validation.reason}` },
+        { status: 400 },
+      );
+    }
   }
 
   const body = {
@@ -134,7 +204,7 @@ export async function GET(request: Request) {
   }
 
   if (verify.isValid !== true) {
-    const paymentRequired = buildPaymentRequired();
+    const paymentRequired = await buildPaymentRequired(deadlineSeconds, resourceId, coverage);
     return NextResponse.json(
       { ...paymentRequired, error: verify.invalidReason ?? "payment not valid" },
       {
