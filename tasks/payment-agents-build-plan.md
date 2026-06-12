@@ -383,6 +383,21 @@ Item 3 (Insurance / underwriter-policy) is CODE-COMPLETE and proven on-chain end
 one-time protocol-owner txs, which the user (Vladimir) does TOMORROW with the Deployer key 0xa2293a…
 After those 2 txs, coverage purchase + payout go fully live with NO code changes.
 
+> **UPDATE 2026-06-11 — INSURANCE NOW FULLY LIVE.** All 3 owner-setup txs landed:
+> (1) `escrow.setInsuranceManager` + (2) `registry.registerPolicy` by Deployer 0xa2293a…;
+> (3) `pool.addPolicy(0xc90bd0fc…)` by SELLER 0x213CE2FB… (tx 0x2124bf2560fbbfe3d8ca15b2512f616ab1f71a65c843d2072e59e436a8f33b10).
+> `insurance-check.mts check` is all-green: insuranceManager set = true, policy allow-listed = true,
+> purchaseCoverage simulation SUCCEEDS. Pool staked 2.00 USDC (capped payout).
+> Coverage now records a real coverageId/tx instead of status="pending-setup".
+>
+> **2026-06-11 — CLAIM/PAYOUT now works (two bugs fixed).** (1) `/api/coverage/claim` route was
+> MISSING from git: `.gitignore`'s generic `coverage/` (test reports) also swallowed
+> `apps/demo/app/api/coverage/` → the route never committed. Fixed with a `!`-negation; route
+> rebuilt (dispute(coverageId) from the treasury via session key → pool pays coverage amount back).
+> (2) coverage `expiry` was set to the delivery deadline → ~0s claim window after a breach; now
+> `deadline + CLAIM_WINDOW (1h)` so a breached purchase is actually claimable. Proven e2e on
+> escrow #93: breach → claim → 0.10 USDC paid pool→treasury (tx 0x07c78217…).
+
 ### DEPLOYED THIS SESSION (Arbitrum Sepolia, our SELLER key 0x213CE2FB…)
 - DeliveryDeadlineResolver = 0xf1cf91d4c1efb055d648b3d8d73f9c86446cdcc0  (escrow→0xa125db…, verified)
 - DeliveryPolicy          = 0xc90bd0fc6515a1152d1776ad19a39b76d8670e1c  (coverageManager→0x3fcD…, ERC165 IUnderwriterPolicy ✓)
