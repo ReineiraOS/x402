@@ -383,8 +383,12 @@ async function runX402Payment(
   if (wantsCoverage && escrowExtra && agent) {
     const holder = (treasury ?? agent.address) as `0x${string}`;
     const escrowDeadline = requirements.extra?.escrowDeadline;
-    const expiry =
+    // Coverage must outlive the delivery deadline: a breach only becomes claimable AFTER
+    // the deadline passes, so the buyer needs a window past it to file the claim.
+    const CLAIM_WINDOW_SECONDS = 3600;
+    const baseExpiry =
       typeof escrowDeadline === "number" ? escrowDeadline : Math.floor(Date.now() / 1000) + 300;
+    const expiry = baseExpiry + CLAIM_WINDOW_SECONDS;
     emit({
       zone: "buyer",
       msg: "Buys delivery coverage against the escrow — DeliveryPolicy on the underwriter pool",

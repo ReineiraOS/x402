@@ -5,6 +5,8 @@ foundry-cache/
 broadcast/
 cache/
 coverage/
+# ...but not the insurance coverage API route (the pattern above is for test reports)
+!apps/demo/app/api/coverage/
 *.tsbuildinfo
 
 # Next.js
