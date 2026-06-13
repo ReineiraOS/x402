@@ -322,6 +322,32 @@ export async function markSpendReleased(
   }
 }
 
+// The seller agent fulfilled the order: store its composed read (and the raw data snapshot)
+// as the purchase result. If it attested + redeemed on-chain, also mark the escrow released.
+export async function markSpendDelivered(
+  escrowId: string,
+  data: { result: string; artifact?: unknown; releaseTx?: string },
+): Promise<void> {
+  const store = await readStore();
+  let changed = false;
+  for (const agent of store.agents) {
+    for (const record of agent.ledger) {
+      if (record.escrowId === escrowId) {
+        record.result = data.result;
+        if (data.artifact !== undefined) record.artifact = data.artifact;
+        if (data.releaseTx) {
+          record.released = true;
+          record.releaseTx = data.releaseTx;
+        }
+        changed = true;
+      }
+    }
+  }
+  if (changed) {
+    await writeStore(store);
+  }
+}
+
 // Attach the coverage purchased against a purchase's escrow (matched by escrowId).
 export async function markSpendCovered(
   escrowId: string,

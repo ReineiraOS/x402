@@ -31,11 +31,14 @@ async function buildPaymentRequired(deadlineSeconds?: number, resourceId?: strin
   };
 
   if (escrowConfig) {
+    // Every escrow uses the delivery resolver so the seller agent has a real on-chain
+    // action (attest delivery → release); coverage is an independent add-on on top.
+    const useDelivery = !!escrowConfig.deliveryResolver;
     const issued = await createEscrowForSale(
       escrowConfig,
       BigInt(resource.priceAtomic),
       deadlineSeconds,
-      coverage,
+      useDelivery,
     );
     payTo = issued.extra.receiver;
     extra = {
@@ -173,7 +176,7 @@ export async function GET(request: Request) {
       escrowConfig,
       acceptedExtra,
       BigInt(resource.priceAtomic),
-      coverage,
+      !!escrowConfig.deliveryResolver,
     );
     if (!validation.ok) {
       return NextResponse.json(

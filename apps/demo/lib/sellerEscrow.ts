@@ -235,3 +235,97 @@ export async function isEscrowFunded(
   })) as bigint;
   return paid >= amount;
 }
+
+const deliveryAttestAbi = [
+  {
+    type: "function",
+    name: "attestDelivery",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "escrowId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "isDelivered",
+    stateMutability: "view",
+    inputs: [{ name: "escrowId", type: "uint256" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "deadlineOf",
+    stateMutability: "view",
+    inputs: [{ name: "escrowId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint64" }],
+  },
+] as const;
+
+export interface AttestRedeemResult {
+  attestTx?: `0x${string}`;
+  redeemTx: `0x${string}`;
+}
+
+// The seller's autonomous on-chain delivery: attest delivery on the resolver (only
+// valid before the deadline) then redeem the escrow to the seller. Throws on a passed
+// deadline (a breach) or revert, so the caller can fall back to the breach narrative.
+export async function attestAndRedeem(
+  config: SellerEscrowConfig,
+  escrowId: bigint,
+): Promise<AttestRedeemResult> {
+  if (!config.deliveryResolver) {
+    throw new Error("delivery resolver not configured");
+  }
+  const publicClient = publicClientFor(config);
+  const seller = privateKeyToAccount(config.sellerKey);
+  const walletClient = createWalletClient({
+    account: seller,
+    chain: arbitrumSepolia,
+    transport: http(config.rpcUrl),
+  });
+
+  let attestTx: `0x${string}` | undefined;
+  const [delivered, deadline] = (await Promise.all([
+    publicClient.readContract({
+      address: config.deliveryResolver,
+      abi: deliveryAttestAbi,
+      functionName: "isDelivered",
+      args: [escrowId],
+    }),
+    publicClient.readContract({
+      address: config.deliveryResolver,
+      abi: deliveryAttestAbi,
+      functionName: "deadlineOf",
+      args: [escrowId],
+    }),
+  ])) as [boolean, bigint];
+
+  if (!delivered) {
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    if (now > deadline) {
+      throw new Error("delivery deadline already passed — cannot attest (breach)");
+    }
+    const { request: attestReq } = await publicClient.simulateContract({
+      account: seller,
+      address: config.deliveryResolver,
+      abi: deliveryAttestAbi,
+      functionName: "attestDelivery",
+      args: [escrowId],
+    });
+    attestTx = await walletClient.writeContract(attestReq);
+    await publicClient.waitForTransactionReceipt({ hash: attestTx });
+  }
+
+  const { request: redeemReq } = await publicClient.simulateContract({
+    account: seller,
+    address: config.escrow,
+    abi: escrowAbi,
+    functionName: "redeem",
+    args: [escrowId],
+  });
+  const redeemTx = await walletClient.writeContract(redeemReq);
+  const receipt = await publicClient.waitForTransactionReceipt({ hash: redeemTx });
+  if (receipt.status !== "success") {
+    throw new Error(`redeem reverted in ${redeemTx}`);
+  }
+  return { attestTx, redeemTx };
+}

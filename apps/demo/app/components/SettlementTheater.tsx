@@ -6,7 +6,7 @@ import { usdc, shortAddress, type ClientAgent, type SpendRecord, type Transcript
 import { storedTreasuryAddress } from "../../lib/passkeyTreasury";
 
 type RunEvent = {
-  zone?: "buyer" | "system" | "provider";
+  zone?: "buyer" | "system" | "provider" | "seller";
   level?: "error" | "info";
   kind?: "deal" | "escrow" | "coverage";
   deal?: string;
@@ -26,7 +26,7 @@ type RunEvent = {
   final?: boolean;
 };
 
-type SessionKind = "cmd" | "thinking" | "action" | "payment" | "result" | "event";
+type SessionKind = "cmd" | "thinking" | "action" | "payment" | "result" | "event" | "seller";
 type SessionLine = {
   id: number;
   kind: SessionKind;
@@ -281,12 +281,12 @@ export function SettlementTheater({
   const [escrowId, setEscrowId] = useState<string | null>(null);
   const [escrowDeadline, setEscrowDeadline] = useState<number | null>(null);
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
-  const [releasing, setReleasing] = useState(false);
   const [released, setReleased] = useState(false);
   const [tab, setTab] = useState<Tab>("console");
   const [notice, setNotice] = useState<string | null>(null);
   const [resources, setResources] = useState<ResourceOption[]>([]);
   const [resourceId, setResourceId] = useState<string>("");
+  const [forceDecline, setForceDecline] = useState(false);
   const [busyEscrow, setBusyEscrow] = useState<string | null>(null);
   const [batchReleasing, setBatchReleasing] = useState(false);
   const [detail, setDetail] = useState<SpendRecord | null>(null);
@@ -332,7 +332,7 @@ export function SettlementTheater({
     setSession((prev) => {
       const last = prev[prev.length - 1];
       const kind: SessionKind = final ? "result" : "thinking";
-      if (last && last.streaming) {
+      if (last && last.streaming && last.kind !== "seller") {
         return [...prev.slice(0, -1), { ...last, text: (last.text ?? "") + delta, kind }];
       }
       return [...prev, { id: nextId(), kind, text: delta, streaming: true }];
@@ -342,7 +342,27 @@ export function SettlementTheater({
   const endStream = useCallback(() => {
     setSession((prev) => {
       const last = prev[prev.length - 1];
-      if (!last || !last.streaming) return prev;
+      if (!last || !last.streaming || last.kind === "seller") return prev;
+      return [...prev.slice(0, -1), { ...last, streaming: false }];
+    });
+  }, []);
+
+  // The seller is a second agent: stream its reasoning into its own voice so the console
+  // reads as a conversation between two agents rather than one agent and a passive API.
+  const streamSeller = useCallback((delta: string) => {
+    setSession((prev) => {
+      const last = prev[prev.length - 1];
+      if (last && last.streaming && last.kind === "seller") {
+        return [...prev.slice(0, -1), { ...last, text: (last.text ?? "") + delta }];
+      }
+      return [...prev, { id: nextId(), kind: "seller", text: delta, streaming: true }];
+    });
+  }, []);
+
+  const endStreamSeller = useCallback(() => {
+    setSession((prev) => {
+      const last = prev[prev.length - 1];
+      if (!last || !last.streaming || last.kind !== "seller") return prev;
       return [...prev.slice(0, -1), { ...last, streaming: false }];
     });
   }, []);
@@ -385,6 +405,14 @@ export function SettlementTheater({
         // Narration arrives as a following system line; nothing to fold into deal state.
         return;
       }
+      if (event.zone === "seller") {
+        if (event.streamEnd) return endStreamSeller();
+        if (event.stream) return streamSeller(event.msg ?? "");
+        // A seller line carrying a tx is the on-chain attest+redeem → escrow released.
+        if (event.tx) setReleased(true);
+        push({ kind: "seller", text: event.msg ?? "", tx: event.tx, arbiscan: event.arbiscan });
+        return;
+      }
       if (event.zone === "buyer" && event.streamEnd) return endStream();
       if (event.zone === "buyer" && event.stream) return stream(event.msg ?? "", event.final ?? false);
 
@@ -410,7 +438,7 @@ export function SettlementTheater({
         if (event.arbiscan) setArbiscan(event.arbiscan);
       }
     },
-    [push, stream, endStream, advanceStatus, onSettled],
+    [push, stream, endStream, streamSeller, endStreamSeller, advanceStatus, onSettled],
   );
 
   const runDeal = useCallback(async () => {
@@ -440,7 +468,9 @@ export function SettlementTheater({
       const treasury = storedTreasuryAddress();
       const runUrl = `/api/run?agentId=${encodeURIComponent(agent.id)}${
         resourceId ? `&resourceId=${encodeURIComponent(resourceId)}` : ""
-      }${treasury ? `&treasury=${encodeURIComponent(treasury)}` : ""}`;
+      }${treasury ? `&treasury=${encodeURIComponent(treasury)}` : ""}${
+        forceDecline ? "&sellerDecline=1" : ""
+      }`;
       const res = await fetch(runUrl, { cache: "no-store", signal: controller.signal });
       if (!res.body) throw new Error("no response body");
       const reader = res.body.getReader();
@@ -468,34 +498,7 @@ export function SettlementTheater({
       setStatus("failed");
       setRunning(false);
     }
-  }, [running, handleEvent, push, agent.id, agent.name, resourceId]);
-
-  const releaseEscrow = useCallback(async () => {
-    if (!escrowId || releasing) return;
-    setReleasing(true);
-    try {
-      const res = await fetch("/api/release", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ escrowId }),
-      });
-      const json = (await res.json()) as { txHash?: string; error?: string; detail?: string; secondsRemaining?: string };
-      if (!res.ok) {
-        throw new Error(
-          json.secondsRemaining
-            ? `timelock active — ${json.secondsRemaining}s remaining`
-            : (json.detail ?? json.error ?? `release failed (${res.status})`),
-        );
-      }
-      setReleased(true);
-      push({ kind: "event", text: "released to seller", tx: json.txHash ?? undefined });
-      onSettled?.();
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : String(error));
-    } finally {
-      setReleasing(false);
-    }
-  }, [escrowId, releasing, push, onSettled]);
+  }, [running, handleEvent, push, agent.id, agent.name, resourceId, forceDecline]);
 
   // Release a single past purchase (the seller redeems the escrow). Shared by the
   // per-row button and the "release all eligible" batch action.
@@ -587,9 +590,27 @@ export function SettlementTheater({
   const secondsLeft = escrowDeadline ? Math.max(0, escrowDeadline - nowSec) : 0;
   const locked = funded && escrowDeadline != null && nowSec < escrowDeadline && !released;
   const unlockable = funded && escrowDeadline != null && nowSec >= escrowDeadline && !released;
+  // A covered escrow past its deadline is a delivery breach: the seller can no longer
+  // redeem (release reverts), so the buyer files an insurance claim instead of releasing.
+  const currentCoverage = escrowId
+    ? (agent.ledger.find((r) => r.escrowId === escrowId)?.coverage ?? null)
+    : null;
+  const breach = unlockable && !!currentCoverage && currentCoverage.status === "active";
+  const claimable = breach && !currentCoverage?.claimed;
+  const claimedCov = breach && !!currentCoverage?.claimed;
   const paying = running && !funded;
   const pct = locked ? Math.max(4, Math.min(100, (secondsLeft / Math.max(1, agent.deadlineSeconds)) * 100)) : 100;
-  const escrowState = released ? "released" : unlockable ? "unlockable" : locked ? "locked" : funded ? "funded" : "empty";
+  const escrowState = released
+    ? "released"
+    : breach
+      ? "breach"
+      : unlockable
+        ? "unlockable"
+        : locked
+          ? "locked"
+          : funded
+            ? "funded"
+            : "empty";
   const selectedResource = resources.find((r) => r.id === resourceId);
   const escrowAmt = funded ? (deal?.price ?? "—") : selectedResource ? usdc(selectedResource.priceAtomic) : "—";
 
@@ -740,6 +761,28 @@ export function SettlementTheater({
         </div>
       );
     }
+    if (line.kind === "seller") {
+      return (
+        <div key={line.id} className="cl cl--seller">
+          <span className="cl__seller-tag">⊙ seller</span>
+          <span className="cl__text">
+            {stripMd(line.text ?? "")}
+            {line.streaming ? <span className="cl__cursor" aria-hidden>▍</span> : null}
+            {line.tx ? (
+              <a
+                className="cl__tx"
+                href={line.arbiscan ?? `https://sepolia.arbiscan.io/tx/${line.tx}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {" "}
+                {line.tx.slice(0, 12)}… ↗
+              </a>
+            ) : null}
+          </span>
+        </div>
+      );
+    }
     if (line.kind === "payment") {
       return (
         <div key={line.id} className={`pay pay--${escrowState}`}>
@@ -836,7 +879,7 @@ export function SettlementTheater({
 
         <div className={`pipe__escrow pipe__escrow--${escrowState}`}>
           <span className="pipe__escrow-icon">
-            <Icon name={released ? "check" : "lock"} size={16} stroke={2} />
+            <Icon name={released ? "check" : breach ? "shield" : "lock"} size={16} stroke={2} />
           </span>
           <div className="pipe__escrow-meta">
             <span className="pipe__escrow-id mono">{escrowId ? `Escrow #${escrowId}` : "Escrow"}</span>
@@ -847,10 +890,20 @@ export function SettlementTheater({
               <span className="pipe__time-s mono">seller redeems · {secondsLeft}s</span>
               <span className="pipe__timebar"><span style={{ width: `${pct}%` }} /></span>
             </div>
-          ) : unlockable ? (
-            <button className="pipe__release" onClick={() => void releaseEscrow()} disabled={releasing}>
-              {releasing ? "…" : "Release →"}
+          ) : claimable ? (
+            <button
+              className="pipe__claim"
+              onClick={() => escrowId && void claimPurchase(escrowId)}
+              disabled={busyEscrow === escrowId}
+            >
+              {busyEscrow === escrowId ? "Filing…" : "File claim →"}
             </button>
+          ) : claimedCov ? (
+            <span className="pipe__escrow-hint pipe__escrow-hint--claim">
+              claimed · {usdc(currentCoverage?.claimPayoutAtomic ?? "0")}
+            </span>
+          ) : unlockable ? (
+            <span className="pipe__escrow-hint pipe__escrow-hint--claim">not delivered</span>
           ) : funded || released ? (
             <span className="pipe__escrow-hint">{released ? "released" : "held"}</span>
           ) : null}
@@ -858,18 +911,24 @@ export function SettlementTheater({
 
         <div className="pipe__zone pipe__zone--right">
           <span
-            className={`pipe__arrow${releasing ? " pipe__arrow--active" : ""}${released ? " pipe__arrow--done" : ""}`}
+            className={`pipe__arrow${running && funded && !released ? " pipe__arrow--active" : ""}${released ? " pipe__arrow--done" : ""}`}
             aria-hidden
           >
             <span className="pipe__spark" />
           </span>
           <div className="pipe__node">
-            <span className={`pipe__chip pipe__chip--seller${released ? " pipe__chip--active" : ""}`}>
-              <Icon name="umbrella" size={15} stroke={2} />
+            <span
+              className={`pipe__chip pipe__chip--seller${
+                released ? " pipe__chip--active" : running && funded ? " pipe__chip--thinking" : ""
+              }`}
+            >
+              <Icon name="feed" size={15} stroke={2} />
             </span>
             <div className="pipe__node-meta">
-              <span className="pipe__node-name">Seller</span>
-              <span className="pipe__node-sub">on release</span>
+              <span className="pipe__node-name">Data Desk</span>
+              <span className="pipe__node-sub">
+                {released ? "delivered ✓" : running && funded ? "reasoning…" : "seller agent"}
+              </span>
             </div>
           </div>
         </div>
@@ -978,6 +1037,18 @@ export function SettlementTheater({
                 </option>
               ))}
             </select>
+            <label
+              className="term__decline"
+              title="Make the seller agent decline this order so the escrow breaches — for demoing the insurance claim path"
+            >
+              <input
+                type="checkbox"
+                checked={forceDecline}
+                onChange={(e) => setForceDecline(e.target.checked)}
+                disabled={running}
+              />
+              force breach
+            </label>
             <button className="term__run" onClick={() => void runDeal()} disabled={running}>
               {running ? (
                 <>

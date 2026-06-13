@@ -529,3 +529,50 @@ DeliveryDeadlineResolver `0xf1cf91d4c1efb055d648b3d8d73f9c86446cdcc0` · Pool id
 ### VERIFY (claim)
 - breach a fresh run: Insured Buyer Run deal → wait 60s → `cast call <resolver> "isBreached(uint256)(bool)" <id>` → true.
 - claim: `curl -s -X POST localhost:3000/api/coverage/claim -H 'content-type: application/json' -d '{"escrowId":"<id>"}'` → `{txHash, payoutAtomic:"100000"}`; treasury USDC +0.10.
+
+## ═══ SESSION HANDOFF (2026-06-13 — SELLER IS NOW AN AGENT + breach-UX fix) ═══
+
+Two pieces shipped this session on `feat/dev-209-x402-core` (NOT yet committed — working tree dirty).
+
+### 1. Breach-UX fix in the pipe (the old open tail) — DONE, typecheck green
+`SettlementTheater.tsx`: the pipe used to show a dead green "Release →" on a breached covered
+escrow. Now it reads the current escrow's coverage from `agent.ledger` and on breach shows
+**"File claim →"** (warning-colored node + shield icon); after claim → "claimed · $X"; timelock
+(uncovered) escrows still "Release →". CSS `.pipe__claim`/`.pipe__escrow--breach`/`.pipe__escrow-hint--claim`.
+
+### 2. SELLER IS NOW AN AUTONOMOUS AGENT (the big one) — happy path PROVEN ON-CHAIN
+The seller was a fixed EOA + a deterministic template (`resource/route.ts` `fetchLiveReport`). Now it is
+a second Claude agent that reasons over the real on-chain numbers, composes the read, and **autonomously
+attests delivery + redeems the escrow on-chain** (no manual Release). Decline → no attest → escrow
+breaches at deadline → buyer claims (ties into fix #1).
+- **New `lib/sellerAgent.ts`** — `runSellerAgent({resource,artifact,emit,apiKey,forceDecline})`: "Reineira Data Desk"
+  persona, `deliver_report` tool; streams reasoning to `zone:"seller"`; returns `{delivered, report}`.
+- **`lib/sellerEscrow.ts`** — added `attestAndRedeem(config, escrowId)` (attest if before deadline → redeem; throws on breach).
+- **`lib/agentStore.ts`** — added `markSpendDelivered(escrowId,{result,artifact,releaseTx})`.
+- **`/api/resource`** — escrow now ALWAYS uses the delivery resolver (`useDelivery = !!deliveryResolver`),
+  decoupled from coverage, so the seller has a real on-chain action. Coverage stays an independent add-on.
+- **`/api/run`** — replaced the "Provider delivers" template with the seller-agent step; `runX402Payment` now
+  returns `{report, delivered, sellerRead}`; buyer's tool_result reflects delivered vs not_delivered; settle-time
+  `recordSpend` now stores `result/artifact = null` (delivery happens later via the seller). New `&sellerDecline=1` param.
+- **UI `SettlementTheater.tsx`** — two-voice console (new `seller` SessionKind, distinct steel-accent voice + `⊙ seller` tag,
+  separate `streamSeller`/`endStreamSeller`); pipe Seller node ("Data Desk") pulses while reasoning (`pipe__chip--thinking`),
+  greens on release; right arrow animates while the seller works; **manual pipe "Release →" removed** (seller auto-releases —
+  dead `releaseEscrow`/`releasing` deleted); **"force breach" toggle** in the terminal footer (→ `&sellerDecline=1`).
+
+### VERIFIED
+- `npm run typecheck` clean.
+- **LIVE happy path (env agent + treasury `0x5587…1612`):** Escrow #96 — seller agent streamed a real read
+  ("ETH $1,676.45 · gas 0.020148 gwei · healthy L2"), then attest+redeem tx `0xa228446b…` **status 1 (success)**;
+  store record #96 has `result` = the seller's read, `released: true`. Two voices visible in the SSE.
+- **Decline path: code-complete, NOT live-verified** (it's a no-op-on-chain branch: seller emits a decline, skips
+  attest, returns delivered:false → escrow breaches at deadline → buyer claims). On-screen test below.
+
+### ON-SCREEN TEST (decline → breach → claim)
+Insured Buyer → tick **"force breach"** in the terminal footer → Run deal → seller declines (visible in the seller voice) →
+wait 60s → pipe shows **"File claim →"** → click → pool pays 0.10 back to treasury.
+
+### NOT DONE / NEXT
+- Commit the working tree (feature branch). Decline path live-verify. Consider a real seller persona/identity per resource.
+- FHE confidential-coverage showcase lane (variant "поменьше") was scoped + research done this session but DEFERRED behind
+  this two-agent work (see chat). Confidential* contracts are usable (all owned by our deployer) but need a separate
+  ConfidentialEscrow funding lane + @cofhe/sdk in the demo — not a plugin bolt-on.
