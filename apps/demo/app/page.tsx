@@ -32,9 +32,6 @@ export default function DashboardPage() {
             plugin-gated escrow. Create one, fund it, and watch it settle on-chain.
           </p>
         </div>
-        <Link href="/agents/new" className="btn-cta">
-          <Icon name="plus" size={16} stroke={2} /> New agent
-        </Link>
       </div>
 
       <TreasuryPanel agents={agents} onChange={() => void load()} />
@@ -55,39 +52,41 @@ export default function DashboardPage() {
           </Link>
         </div>
       ) : (
-        <div className="agent-grid">
-          {agents.map((agent) => (
-            <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card bw-card group">
-              <div className="agent-card__top">
-                <span className="agent-card__name">{agent.name}</span>
-                {agent.isDefault ? <span className="pill agent-card__badge">Default</span> : null}
-              </div>
-              <code className="agent-card__addr mono">{shortAddress(agent.address)}</code>
-              <div className="agent-card__stats">
-                <div>
-                  <span className="agent-card__stat-label">Balance</span>
-                  <span className="agent-card__stat-value">{usdc(agent.usdcBalanceAtomic)}</span>
+        <>
+          <div className="agent-grid">
+            {agents.map((agent) => (
+              <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card bw-card group">
+                <div className="agent-card__top">
+                  <span className="agent-card__name">{agent.name}</span>
+                  {agent.isDefault ? <span className="pill agent-card__badge">Default</span> : null}
                 </div>
-                <div>
-                  <span className="agent-card__stat-label">Spent</span>
-                  <span className="agent-card__stat-value">{usdc(agent.totalSpentAtomic)}</span>
+                <code className="agent-card__addr mono">{shortAddress(agent.address)}</code>
+                <div className="agent-card__stats">
+                  <div>
+                    <span className="agent-card__stat-label">Balance</span>
+                    <span className="agent-card__stat-value">{usdc(agent.usdcBalanceAtomic)}</span>
+                  </div>
+                  <div>
+                    <span className="agent-card__stat-label">Spent</span>
+                    <span className="agent-card__stat-value">{usdc(agent.totalSpentAtomic)}</span>
+                  </div>
+                  <div>
+                    <span className="agent-card__stat-label">Plugins</span>
+                    <span className="agent-card__stat-value">{agent.pluginIds.length}</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="agent-card__stat-label">Plugins</span>
-                  <span className="agent-card__stat-value">{agent.pluginIds.length}</span>
-                </div>
-              </div>
-              {agent.prePrompt ? (
-                <p className="agent-card__prompt">{agent.prePrompt}</p>
-              ) : (
-                <p className="agent-card__prompt agent-card__prompt--muted">No pre-prompt</p>
-              )}
-              <span className="agent-card__open">
-                Open workspace <Icon name="arrowRight" size={14} stroke={2} />
-              </span>
+                <span className="agent-card__open">
+                  Open workspace <Icon name="arrowRight" size={14} stroke={2} />
+                </span>
+              </Link>
+            ))}
+          </div>
+          <div className="agent-foot">
+            <Link href="/agents/new" className="btn-cta">
+              <Icon name="plus" size={16} stroke={2} /> New agent
             </Link>
-          ))}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

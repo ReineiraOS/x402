@@ -3,12 +3,17 @@
 import { useEffect, useState } from "react";
 import { Icon } from "../../ui/Icon";
 
+const STORAGE_KEY = "reineira-theme";
+
 export function ThemeToggle() {
   const [dark, setDark] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("pa-theme");
-    const isDark = stored ? stored === "dark" : true;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const isDark =
+      stored === "dark" || stored === "light"
+        ? stored === "dark"
+        : window.matchMedia("(prefers-color-scheme: dark)").matches;
     setDark(isDark);
     document.documentElement.classList.toggle("dark", isDark);
   }, []);
@@ -17,7 +22,7 @@ export function ThemeToggle() {
     const next = !dark;
     setDark(next);
     document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("pa-theme", next ? "dark" : "light");
+    localStorage.setItem(STORAGE_KEY, next ? "dark" : "light");
   };
 
   return (

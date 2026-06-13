@@ -24,7 +24,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
         <div className="side-nav__head">
           <div className="side-nav__top">
             <Link href="/" className="side-nav__brand" aria-label="Payment Agents — home">
-              <Wordmark size={20} />
+              <Wordmark size={26} />
             </Link>
             {onToggle ? (
               <button className="side-nav__collapse" onClick={onToggle} aria-label="Hide navigation" title="Hide navigation">

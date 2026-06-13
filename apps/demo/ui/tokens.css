@@ -11,17 +11,17 @@
 
 :root {
   /* ── Theme-invariant: opacity ladders (translucent overlays) ── */
-  --blue-3: rgba(59,139,255,.03);
-  --blue-4: rgba(59,139,255,.04);
-  --blue-6: rgba(59,139,255,.06);
-  --blue-8: rgba(59,139,255,.08);
-  --blue-10: rgba(59,139,255,.10);
-  --blue-12: rgba(59,139,255,.12);
-  --blue-15: rgba(59,139,255,.15);
-  --blue-18: rgba(59,139,255,.18);
-  --blue-20: rgba(59,139,255,.20);
-  --blue-25: rgba(59,139,255,.25);
-  --blue-35: rgba(59,139,255,.35);
+  --blue-3: rgba(61,131,255,.03);
+  --blue-4: rgba(61,131,255,.04);
+  --blue-6: rgba(61,131,255,.06);
+  --blue-8: rgba(61,131,255,.08);
+  --blue-10: rgba(61,131,255,.10);
+  --blue-12: rgba(61,131,255,.12);
+  --blue-15: rgba(61,131,255,.15);
+  --blue-18: rgba(61,131,255,.18);
+  --blue-20: rgba(61,131,255,.20);
+  --blue-25: rgba(61,131,255,.25);
+  --blue-35: rgba(61,131,255,.35);
 
   --steel-4: rgba(109,142,186,.04);
   --steel-6: rgba(109,142,186,.06);
@@ -39,8 +39,8 @@
   --white-8: rgba(255,255,255,.08);
 
   /* ── Theme-invariant: accent / radius / motion / layout / fonts ── */
-  --accent-blue: #3b8bff;
-  --accent-blue-hover: #5da3ff;
+  --accent-blue: #3d83ff;
+  --accent-blue-hover: #5c99ff;
   --accent-steel: #6d8eba;
   --accent-steel-hover: #8ba8d0;
 
@@ -59,12 +59,12 @@
   --rail-h: 40px;
   --content-max: 1240px;
 
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", ui-monospace, monospace;
 
   /* status dots (saturated; readable on both themes) */
   --st-live: hsl(142 71% 42%);
-  --st-chaos: hsl(217 100% 58%);
+  --st-chaos: hsl(217 100% 62%);
   --st-spec: hsl(38 92% 48%);
   --st-research: hsl(270 60% 56%);
   --st-danger: hsl(0 84% 58%);
@@ -76,18 +76,18 @@
   --dur-3: 390ms;
 
   /* ═════════ LIGHT THEME (default) ═════════ */
-  --surface-void: #f4f6f8;   /* page */
-  --surface-deep: #eef1f5;   /* rail / footer / sidebar */
-  --surface-base: #ffffff;   /* inputs / inner surfaces */
-  --surface-raised: #eef1f6; /* code blocks / popovers */
-  --surface-panel: #e7ebf1;  /* elevated chips */
-  --header-chrome: rgba(244,246,248,.78);
+  --surface-void: #f5f6f8;
+  --surface-deep: #eef0f4;
+  --surface-base: #ffffff;
+  --surface-raised: #eef0f4;
+  --surface-panel: #f1f3f6;
+  --header-chrome: rgba(245,246,248,.78);
 
   --text-primary: #020817;
-  --text-secondary: #324258;
-  --text-muted: #485868;
-  --text-dim: #5a6878;
-  --text-faint: rgba(90,104,120,.72);
+  --text-secondary: #324a63;
+  --text-muted: #495869;
+  --text-dim: #586879;
+  --text-faint: #586879;
 
   /* mono / cipher syntax — light code bg */
   --syntax-keyword: #0550ae;
@@ -99,10 +99,10 @@
   --syntax-comment: #57606a;
   --syntax-punct: #24292f;
 
-  --border-dark: #d3dae3;
-  --border-dark-hover: #b9c2cf;
+  --border-dark: #dadfe7;
+  --border-dark-hover: #c0c8d3;
 
-  --glow-ambient: 0 0 60px rgba(59,139,255,.05);
+  --glow-ambient: 0 0 60px rgba(61,131,255,.05);
   --glass-bg: rgba(255,255,255,.62);
   --code-shadow: 0 1px 2px rgba(15,30,60,.06), 0 10px 30px -12px rgba(15,30,60,.12);
   --shadow-dark-lg: 0 4px 16px -2px rgba(15,30,60,.10);
@@ -116,7 +116,7 @@
 
   /* flipping composites */
   --card-grad: #ffffff;
-  --panel-grad: linear-gradient(160deg, #ffffff, #f3f6fa);
+  --panel-grad: #ffffff;
   --tile-bg: rgba(40,54,78,.08);
   --tile-bg-hover: rgba(40,54,78,.14);
   --modal-scrim: rgba(20,28,40,.35);
@@ -129,20 +129,20 @@
 
 .dark {
   /* ═════════ DARK THEME (landing/portal palette) ═════════ */
-  --surface-void: #000000;
-  --surface-deep: #060a0e;
-  --surface-base: #0d1117;
-  --surface-raised: #1a1e28;
-  --surface-panel: #242830;
-  --header-chrome: rgba(8,12,16,.72);
+  --surface-void: #0d1118;
+  --surface-deep: #06090f;
+  --surface-base: #0d1118;
+  --surface-raised: #0d1118;
+  --surface-panel: #24272e;
+  --header-chrome: rgba(13,17,24,.72);
 
-  --text-primary: #d9d9d9;
-  --text-secondary: #bfbfbf;
-  --text-muted: #999999;
-  --text-dim: #8c8c8c;
-  --text-faint: rgba(140,140,140,.5);
+  --text-primary: #e8e8e8;
+  --text-secondary: #cccccc;
+  --text-muted: #b5b5b5;
+  --text-dim: #a1a1a1;
+  --text-faint: #a1a1a1;
 
-  --syntax-keyword: #3b8bff;
+  --syntax-keyword: #3d83ff;
   --syntax-type: #58b8ff;
   --syntax-string: #7ee8c8;
   --syntax-fhe: #d2a8ff;
@@ -166,8 +166,8 @@
   --st-danger-text: #f4b4b4;
   --st-protect-text: #5fe0c0;
 
-  --card-grad: linear-gradient(160deg, rgba(13,17,23,.8), rgba(0,0,0,.4));
-  --panel-grad: linear-gradient(160deg, rgba(13,17,23,.72), rgba(0,0,0,.35));
+  --card-grad: var(--surface-raised);
+  --panel-grad: var(--surface-raised);
   --tile-bg: var(--white-6);
   --tile-bg-hover: var(--white-8);
   --modal-scrim: rgba(0,0,0,.55);
@@ -237,14 +237,12 @@ button { font-family: inherit; cursor: pointer; }
   transition: border-color .3s var(--ease), box-shadow .3s var(--ease);
   overflow: hidden;
 }
-.bw-card::before {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(135deg, var(--blue-15) 0%, transparent 60%);
-  opacity: 0; transition: opacity .3s var(--ease); pointer-events: none;
-}
 @media (hover: hover) {
-  .bw-card:hover { border-color: var(--border-dark-hover); }
-  .bw-card:hover::before { opacity: 1; }
+  .bw-card:hover { border-color: var(--accent-blue); }
+  .pipe.bw-card:hover,
+  .term.bw-card:hover,
+  .pd.bw-card:hover,
+  .wizard__body.bw-card:hover { border-color: var(--border-dark); }
 }
 
 /* ── Buttons ── */
@@ -375,13 +373,13 @@ button { font-family: inherit; cursor: pointer; }
 
 @keyframes beat-pulse {
   0% { box-shadow: 0 0 0 0 var(--blue-25); }
-  70% { box-shadow: 0 0 0 7px rgba(59,139,255,0); }
-  100% { box-shadow: 0 0 0 0 rgba(59,139,255,0); }
+  70% { box-shadow: 0 0 0 7px rgba(61,131,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(61,131,255,0); }
 }
 .beat-pulse { animation: beat-pulse 1.5s var(--ease) infinite; }
 
 @keyframes soft-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
 .soft-pulse { animation: soft-pulse 1.6s var(--ease) infinite; }
 
-@keyframes bind-ring { 0%, 100% { border-color: var(--blue-20); } 50% { border-color: rgba(59,139,255,.42); } }
+@keyframes bind-ring { 0%, 100% { border-color: var(--blue-20); } 50% { border-color: rgba(61,131,255,.42); } }
 .bind-ring { animation: bind-ring 2s var(--ease) infinite; }

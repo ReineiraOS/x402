@@ -30,6 +30,7 @@ export default function EditAgentPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDefault, setIsDefault] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -97,7 +98,6 @@ export default function EditAgentPage() {
 
   const remove = useCallback(async () => {
     if (deleting) return;
-    if (!confirm("Delete this agent? Its purchase history is removed; treasury funds are unaffected.")) return;
     setDeleting(true);
     setError(null);
     const res = await fetch(`/api/agents/${id}`, { method: "DELETE" });
@@ -105,6 +105,7 @@ export default function EditAgentPage() {
       router.push("/");
     } else {
       setDeleting(false);
+      setConfirmOpen(false);
       setError("Delete failed — this agent cannot be deleted.");
     }
   }, [deleting, id, router]);
@@ -258,7 +259,7 @@ export default function EditAgentPage() {
             <p className="wizard__hint">
               Removes this agent and its purchase history. The treasury and its funds are unaffected.
             </p>
-            <button className="btn-outline edit__delete" onClick={() => void remove()} disabled={deleting}>
+            <button className="btn-outline edit__delete" onClick={() => setConfirmOpen(true)} disabled={deleting}>
               <Icon name="x" size={14} stroke={2} /> {deleting ? "Deleting…" : "Delete this agent"}
             </button>
           </div>
@@ -275,6 +276,39 @@ export default function EditAgentPage() {
           {saving ? "Saving…" : "Save changes"}
         </button>
       </div>
+
+      {confirmOpen ? (
+        <div className="pd-overlay" onClick={() => !deleting && setConfirmOpen(false)} role="presentation">
+          <div className="pd pd--confirm bw-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal>
+            <div className="confirm">
+              <span className="confirm__icon" aria-hidden>
+                <Icon name="alert" size={26} stroke={2.2} />
+              </span>
+              <h2 className="confirm__title">Delete {name.trim() || "this agent"}?</h2>
+              <p className="confirm__lead">
+                This removes the agent and its purchase history. The treasury and its funds are
+                unaffected. This action cannot be undone.
+              </p>
+              <div className="confirm__actions">
+                <button
+                  className="btn-outline"
+                  onClick={() => setConfirmOpen(false)}
+                  disabled={deleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn-cta confirm__delete"
+                  onClick={() => void remove()}
+                  disabled={deleting}
+                >
+                  <Icon name="x" size={15} stroke={2} /> {deleting ? "Deleting…" : "Delete agent"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

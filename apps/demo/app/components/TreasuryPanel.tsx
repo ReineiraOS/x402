@@ -131,7 +131,7 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
       <section className="treasury treasury--empty bw-card">
         <div className="treasury__id">
           <span className="treasury__icon">
-            <Icon name="passkey" size={18} stroke={2} />
+            <Icon name="passkey" size={27} stroke={2} />
           </span>
           <div className="treasury__meta">
             <span className="treasury__cap">Treasury · master wallet</span>
@@ -159,7 +159,7 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
     <section className="treasury bw-card">
       <div className="treasury__id">
         <span className="treasury__icon">
-          <Icon name="passkey" size={18} stroke={2} />
+          <Icon name="passkey" size={27} stroke={2} />
         </span>
         <div className="treasury__meta">
           <span className="treasury__cap">

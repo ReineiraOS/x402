@@ -21,7 +21,7 @@ const RANGE_MS: Record<Range, number> = {
   all: Infinity,
 };
 
-const C_BLUE = "#3b8bff";
+const C_BLUE = "#3d83ff";
 const C_BLUE_HI = "#7db4ff";
 const C_GREEN = "#22c55e";
 const C_TEAL = "#2fc8a4";

@@ -745,7 +745,7 @@ export function SettlementTheater({
         <div key={line.id} className={`pay pay--${escrowState}`}>
           <div className="pay__head">
             <span className="pay__icon">
-              <Icon name="bolt" size={13} stroke={2.2} />
+              <Icon name="bolt" size={20} stroke={2.2} />
             </span>
             <span className="pay__title">x402 payment</span>
             <span className={`pay__status pay__status--${status === "settled" ? "ok" : status === "failed" ? "err" : "run"}`}>
