@@ -1,0 +1,627 @@
+/* ════════════════════════════════════════════════════════════════
+   Two-Key Halt / Bonded x402 — security-primitive showcase
+   Tokens are global (ui/tokens.css). This module owns only bespoke
+   geometry/motion for the three-actor theater + terminal-style log.
+   ════════════════════════════════════════════════════════════════ */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Honesty legend strip (always visible) ── */
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 16px;
+}
+.legend__cap {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-right: 4px;
+}
+.legend__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.honest {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+.honest__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  flex-shrink: 0;
+}
+.honest--live {
+  color: var(--st-live-text);
+  background: rgba(36, 196, 116, 0.1);
+  border-color: rgba(36, 196, 116, 0.25);
+}
+.honest--live .honest__dot {
+  background: var(--st-live);
+}
+.honest--staged,
+.honest--scripted {
+  color: var(--st-spec-text);
+  background: rgba(243, 166, 40, 0.1);
+  border-color: rgba(243, 166, 40, 0.22);
+}
+.honest--staged .honest__dot,
+.honest--scripted .honest__dot {
+  background: var(--st-spec);
+}
+.honest--deferred {
+  color: var(--text-dim);
+  background: var(--tile-bg);
+  border-color: var(--border-dark);
+}
+.honest--deferred .honest__dot {
+  background: var(--text-dim);
+}
+
+/* ── Run controls ── */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+}
+.controls__run {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 22px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent-blue);
+  border: 1px solid var(--accent-blue);
+  border-radius: var(--radius-button, var(--r-btn));
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background var(--dur-1) var(--ease),
+    box-shadow var(--dur-1) var(--ease);
+}
+.controls__run:hover:not(:disabled) {
+  background: var(--accent-blue-hover);
+  box-shadow: var(--glow-cta);
+}
+.controls__run:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.controls__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+.controls__check input {
+  accent-color: var(--st-spec);
+  cursor: pointer;
+}
+.controls__check:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.controls__hint {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-left: auto;
+  max-width: 320px;
+  line-height: 1.45;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   The theater — three actors: Sentinel · Vault · Guardian
+   ════════════════════════════════════════════════════════════════ */
+.theater {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 14px;
+  align-items: stretch;
+}
+@media (max-width: 880px) {
+  .theater {
+    grid-template-columns: 1fr;
+  }
+}
+
+.actor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 18px 20px;
+  border-radius: var(--radius-lg, var(--r-card));
+  border: 1px solid var(--border-dark);
+  background: var(--card-bg, var(--card-grad));
+  transition:
+    border-color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease);
+}
+.actor--active {
+  border-color: var(--steel-25);
+  box-shadow: 0 0 0 1px var(--steel-18);
+}
+
+.actor__head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.actor__chip {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-full);
+  background: var(--tile-bg);
+  border: 1px solid var(--border-dark);
+  color: var(--accent-steel);
+  transition:
+    background var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease);
+}
+.actor--active .actor__chip {
+  background: var(--steel-18);
+  border-color: var(--steel-25);
+  color: var(--accent-steel-hover);
+  animation: beat-pulse 1.6s var(--ease) infinite;
+}
+.actor__id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.actor__name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+.actor__role {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  line-height: 1.35;
+}
+.actor__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+.actor__line {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  min-height: 2.6em;
+}
+.actor__line--idle {
+  color: var(--text-dim);
+  font-style: italic;
+}
+.actor__sub {
+  margin-top: auto;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
+  padding-top: 4px;
+  border-top: 1px solid var(--border-dark);
+}
+
+/* Sentinel accent: steel/blue (it earns the right to speak) */
+.actor--sentinel.actor--active {
+  border-color: var(--blue-25);
+  box-shadow: 0 0 0 1px var(--blue-12);
+}
+.actor--sentinel.actor--active .actor__chip {
+  background: var(--blue-8);
+  border-color: var(--blue-25);
+  color: var(--accent-blue);
+}
+/* Guardian accent: amber when it freezes the vault */
+.actor--guardian.actor--active {
+  border-color: rgba(243, 166, 40, 0.3);
+  box-shadow: 0 0 0 1px rgba(243, 166, 40, 0.14);
+}
+.actor--guardian.actor--active .actor__chip {
+  background: rgba(243, 166, 40, 0.1);
+  border-color: rgba(243, 166, 40, 0.3);
+  color: var(--st-spec);
+}
+
+/* Verdict badge inside Guardian */
+.verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 7px 14px;
+  border-radius: var(--radius-button, var(--r-btn));
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  animation: reveal-up var(--dur-2) var(--ease) both;
+}
+.verdict--valid {
+  color: var(--st-live-text);
+  background: rgba(36, 196, 116, 0.12);
+  border: 1px solid rgba(36, 196, 116, 0.3);
+}
+.verdict--false {
+  color: var(--st-danger-text);
+  background: rgba(229, 90, 90, 0.12);
+  border: 1px solid rgba(229, 90, 90, 0.32);
+}
+
+/* ── Vault — the hero panel ── */
+.vault {
+  position: relative;
+  text-align: center;
+  align-items: center;
+  overflow: hidden;
+  transition:
+    border-color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    background var(--dur-2) var(--ease);
+}
+.vault__head {
+  justify-content: center;
+}
+.vault__bignum {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 52px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--text-primary);
+  transition: color var(--dur-3) var(--ease);
+  font-variant-numeric: tabular-nums;
+}
+.vault__floor {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.vault__floor-marker {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--text-dim);
+  flex-shrink: 0;
+  transition: background var(--dur-2) var(--ease);
+}
+.vault__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--r-full);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition:
+    color var(--dur-2) var(--ease),
+    background var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease);
+}
+.vault__banner {
+  width: 100%;
+  margin-top: 2px;
+  padding: 7px 12px;
+  border-radius: var(--radius-button, var(--r-btn));
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  animation: reveal-up var(--dur-2) var(--ease) both;
+}
+
+/* vault state colorways (drive number + frame + chip together) */
+.vault--healthy {
+  border-color: rgba(36, 196, 116, 0.22);
+}
+.vault--healthy .vault__bignum {
+  color: var(--st-live-text);
+}
+.vault--healthy .vault__floor-marker {
+  background: var(--st-live);
+}
+.vault--healthy .vault__state {
+  color: var(--st-live-text);
+  background: rgba(36, 196, 116, 0.1);
+  border: 1px solid rgba(36, 196, 116, 0.25);
+}
+
+.vault--bonded {
+  border-color: var(--blue-25);
+  box-shadow: 0 0 30px var(--blue-8);
+}
+.vault--bonded .vault__bignum {
+  color: var(--accent-blue);
+}
+.vault--bonded .vault__floor-marker {
+  background: var(--accent-blue);
+}
+.vault--bonded .vault__state {
+  color: var(--accent-blue);
+  background: var(--blue-8);
+  border: 1px solid var(--blue-25);
+}
+.vault--bonded .vault__banner {
+  color: var(--accent-blue);
+  background: var(--blue-8);
+  border: 1px solid var(--blue-25);
+}
+
+.vault--draining {
+  border-color: var(--st-spec);
+  box-shadow: 0 0 36px rgba(243, 166, 40, 0.16);
+  animation: vault-shake 0.5s var(--ease);
+}
+.vault--draining .vault__bignum {
+  color: var(--st-spec);
+}
+.vault--draining .vault__floor-marker {
+  background: var(--st-spec);
+}
+.vault--draining .vault__state {
+  color: var(--st-spec-text);
+  background: rgba(243, 166, 40, 0.12);
+  border: 1px solid rgba(243, 166, 40, 0.3);
+}
+.vault--draining .vault__banner {
+  color: var(--st-spec-text);
+  background: rgba(243, 166, 40, 0.1);
+  border: 1px solid rgba(243, 166, 40, 0.28);
+}
+
+.vault--paused {
+  border-color: var(--st-spec);
+  box-shadow: 0 0 40px rgba(243, 166, 40, 0.2);
+}
+.vault--paused .vault__bignum {
+  color: var(--text-primary);
+}
+.vault--paused .vault__floor-marker {
+  background: var(--st-spec);
+}
+.vault--paused .vault__state {
+  color: var(--st-spec-text);
+  background: rgba(243, 166, 40, 0.12);
+  border: 1px solid rgba(243, 166, 40, 0.3);
+}
+
+.vault--safe {
+  border-color: var(--st-live);
+  box-shadow: 0 0 44px rgba(36, 196, 116, 0.22);
+}
+.vault--safe .vault__bignum {
+  color: var(--st-live-text);
+}
+.vault--safe .vault__floor-marker {
+  background: var(--st-live);
+}
+.vault--safe .vault__state {
+  color: var(--st-live-text);
+  background: rgba(36, 196, 116, 0.12);
+  border: 1px solid rgba(36, 196, 116, 0.3);
+}
+
+.vault--idle .vault__bignum {
+  color: var(--text-dim);
+}
+
+@keyframes vault-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Event log — terminal-style, newest at bottom, auto-scroll
+   ════════════════════════════════════════════════════════════════ */
+.log {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  background: var(--surface-base);
+}
+.log__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-dark);
+  background: var(--surface-deep);
+  flex-shrink: 0;
+}
+.log__dots {
+  display: inline-flex;
+  gap: 6px;
+}
+.log__dots i {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+.log__dots i:nth-child(1) {
+  background: #ff5f57;
+}
+.log__dots i:nth-child(2) {
+  background: #febc2e;
+}
+.log__dots i:nth-child(3) {
+  background: #28c840;
+}
+.log__title {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.log__title-dim {
+  color: var(--text-dim);
+}
+.log__running {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--accent-blue);
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+.log__body {
+  height: 300px;
+  overflow-y: auto;
+  padding: 16px 18px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.log__empty {
+  color: var(--text-dim);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12.5px;
+}
+.log__caret {
+  color: var(--accent-blue);
+  font-weight: 700;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  animation: reveal-up var(--dur-1) var(--ease) both;
+}
+.row__gutter {
+  flex-shrink: 0;
+  width: 70px;
+  text-align: right;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding-top: 1px;
+}
+.row__gutter--sentinel {
+  color: var(--accent-blue);
+}
+.row__gutter--guardian {
+  color: var(--st-spec);
+}
+.row__gutter--vault {
+  color: var(--accent-steel);
+}
+.row__gutter--system {
+  color: var(--text-dim);
+}
+.row__body {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+.row--error .row__body {
+  color: var(--st-danger);
+}
+.row--ledger {
+  margin-top: 4px;
+  padding: 13px 15px;
+  border-radius: var(--radius-block, var(--r-block));
+  border: 1px solid var(--steel-25);
+  background: var(--steel-8);
+  flex-direction: column;
+  gap: 6px;
+}
+.row--ledger .row__gutter {
+  width: auto;
+  text-align: left;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+.row--ledger .row__body {
+  color: var(--text-primary);
+  line-height: 1.65;
+}
+
+.inline-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: var(--r-full);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+.inline-chip--staged,
+.inline-chip--scripted {
+  color: var(--st-spec-text);
+  background: rgba(243, 166, 40, 0.12);
+  border: 1px solid rgba(243, 166, 40, 0.22);
+}
+
+.tx {
+  margin-left: 8px;
+  color: var(--accent-blue);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  white-space: nowrap;
+}
+.tx:hover {
+  color: var(--accent-blue-hover);
+}

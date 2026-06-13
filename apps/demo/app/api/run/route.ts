@@ -19,6 +19,7 @@ import {
   getAgent,
   recordSpend,
   markSpendCovered,
+  markSpendDelivered,
   updateSpendTranscript,
   type AgentRecord,
   type TranscriptLine,
@@ -27,6 +28,9 @@ import { getResource, type ResourceDef } from "../../../lib/resources";
 import { getTreasurySigner, ensureTreasuryDeployed } from "../../../lib/sessionWallet";
 import { addSpent, getSession } from "../../../lib/sessionStore";
 import { attachCoverage } from "../../../lib/coverage";
+import { attestAndRedeem, getSellerEscrowConfig } from "../../../lib/sellerEscrow";
+import { runSellerAgent } from "../../../lib/sellerAgent";
+import { runTwoKeyHalt } from "../../../lib/twoKey";
 
 const COVERAGE_PLUGIN_ID = "delivery-coverage-policy";
 
@@ -49,6 +53,7 @@ function makeTranscript() {
   const lines: TranscriptLine[] = [];
   let buf = "";
   let bufFinal = false;
+  let sbuf = "";
   const flush = () => {
     if (buf.trim()) lines.push({ kind: bufFinal ? "result" : "thinking", text: buf.trim() });
     buf = "";
@@ -83,6 +88,24 @@ function makeTranscript() {
               : `coverage ${status ?? "pending"} · payout pending one-time setup (testnet)`,
           tx: str(e.tx) ?? null,
         });
+        return;
+      }
+      if (e.zone === "seller" && e.streamEnd) {
+        if (sbuf.trim()) lines.push({ kind: "delivery", text: `Seller: ${sbuf.trim()}` });
+        sbuf = "";
+        return;
+      }
+      if (e.zone === "seller" && e.stream) {
+        sbuf += str(e.msg) ?? "";
+        return;
+      }
+      if (e.zone === "seller" && str(e.msg)) {
+        flush();
+        if (sbuf.trim()) {
+          lines.push({ kind: "delivery", text: `Seller: ${sbuf.trim()}` });
+          sbuf = "";
+        }
+        lines.push({ kind: "delivery", text: `Seller: ${str(e.msg)!}`, tx: str(e.tx) ?? null });
         return;
       }
       if (e.zone === "buyer" && e.streamEnd) {
@@ -142,6 +165,7 @@ function networkLabel(caip: string): string {
 }
 
 type LiveReport = { result?: string } & Record<string, unknown>;
+type SellerRunResult = { report: LiveReport; delivered: boolean; sellerRead: string | null };
 
 // The REAL x402 deal: GET → 402 → sign EIP-3009 → re-GET with payment → on-chain
 // settle via the facilitator → live report. Emits the same system/provider/deal/tx
@@ -241,7 +265,9 @@ async function runX402Payment(
   resourceId: string,
   recorded: string[],
   treasury: string | null,
-): Promise<LiveReport> {
+  apiKey: string | undefined,
+  forceDecline: boolean,
+): Promise<SellerRunResult> {
   const signer = await createBuyerSigner(emit, agent, treasury);
 
   const wantsCoverage = !!agent?.pluginIds.includes(COVERAGE_PLUGIN_ID);
@@ -357,8 +383,8 @@ async function runX402Payment(
       description: paymentRequired.resource?.description ?? "x402 resource",
       resourceId,
       resourceName: def.name,
-      result: paidBody.artifact?.result ?? null,
-      artifact: paidBody.artifact ?? null,
+      result: null,
+      artifact: null,
       deadline: typeof escrowDeadline === "number" ? escrowDeadline : null,
       released: false,
       releaseTx: null,
@@ -434,16 +460,69 @@ async function runX402Payment(
     await sleep(STEP_MS);
   }
 
-  emit({ zone: "provider", msg: "Provider received the settlement — preparing the resource…" });
-  await sleep(STEP_MS * 2);
+  // The seller is its own agent: it reasons over the freshly-fetched data and either delivers
+  // a composed read (attesting delivery on-chain → escrow releases) or declines, in which case
+  // the escrow breaches at its deadline and the buyer can claim.
+  emit({ zone: "seller", msg: "Order routed to the seller agent — Reineira Data Desk" });
+  await sleep(STEP_MS);
+  const outcome = await runSellerAgent({
+    resource: getResource(resourceId),
+    artifact: paidBody.artifact ?? {},
+    emit,
+    apiKey,
+    forceDecline,
+  });
+
+  const report: LiveReport = { ...(paidBody.artifact ?? {}) };
+  if (!outcome.delivered) {
+    emit({
+      zone: "system",
+      msg: escrowExtra
+        ? `Seller declined — ${price} stays locked in escrow #${escrowExtra.escrowId}; if undelivered by the deadline the buyer can claim insurance.`
+        : "Seller declined the order — no data delivered.",
+    });
+    return { report, delivered: false, sellerRead: null };
+  }
+
+  const sellerRead = outcome.report ?? paidBody.artifact?.result ?? null;
+  if (sellerRead) report.result = sellerRead;
+
+  const sellerConfig = getSellerEscrowConfig();
+  let releaseTx: string | undefined;
+  if (escrowExtra && sellerConfig?.deliveryResolver) {
+    try {
+      const res = await attestAndRedeem(sellerConfig, BigInt(escrowExtra.escrowId));
+      releaseTx = res.redeemTx;
+      emit({
+        zone: "seller",
+        msg: "Attests delivery on-chain and redeems the escrow — payment released to the seller",
+        tx: res.redeemTx,
+        arbiscan: `https://sepolia.arbiscan.io/tx/${res.redeemTx}`,
+      });
+    } catch (relErr) {
+      emit({
+        zone: "seller",
+        msg: `Could not release the escrow on-chain (${errorMessage(relErr)}) — it can be released manually from Purchases.`,
+      });
+    }
+  }
+
   emit({
     zone: "provider",
-    msg: "Provider delivers the live data report",
-    detail: paidBody.artifact?.result,
+    msg: "Seller delivers the data report",
+    detail: sellerRead ?? undefined,
     artifact: paidBody.artifact,
   });
 
-  return paidBody.artifact ?? {};
+  if (agent && escrowExtra && sellerRead) {
+    await markSpendDelivered(escrowExtra.escrowId, {
+      result: sellerRead,
+      artifact: paidBody.artifact ?? null,
+      releaseTx,
+    });
+  }
+
+  return { report, delivered: true, sellerRead };
 }
 
 const FETCH_LIVE_REPORT_TOOL: Tool = {
@@ -497,6 +576,9 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const resourceDef = getResource(url.searchParams.get("resourceId"));
   const treasury = url.searchParams.get("treasury");
+  const forceDecline = url.searchParams.get("sellerDecline") === "1";
+  const mode = url.searchParams.get("mode");
+  const falseAlarm = url.searchParams.get("falseAlarm") === "1";
 
   let agent: AgentRecord | null = null;
   try {
@@ -533,6 +615,14 @@ export async function GET(request: Request) {
       };
 
       try {
+        // Two-Key Halt / Bonded x402 showcase: a fully isolated branch that never touches the
+        // data-buy hero path. Runs the bond → staged attack → Guardian pause → verdict → settle
+        // choreography, every step a real Arbitrum Sepolia tx.
+        if (mode === "twokey") {
+          await runTwoKeyHalt({ emit, forceFalseAlarm: falseAlarm });
+          emit({ done: true });
+          return;
+        }
         const apiKey = process.env.ANTHROPIC_API_KEY;
         if (!apiKey) {
           // No LLM key: run a scripted buy so the full on-chain x402 → escrow flow is
@@ -545,13 +635,24 @@ export async function GET(request: Request) {
           await sleep(STEP_MS);
           emit({ zone: "buyer", msg: "Decides to buy the live report — initiating x402 payment" });
           await sleep(STEP_MS);
-          const report = await runX402Payment(resource, emit, agent, resourceDef.id, recorded, treasury);
+          const out = await runX402Payment(
+            resource,
+            emit,
+            agent,
+            resourceDef.id,
+            recorded,
+            treasury,
+            apiKey,
+            forceDecline,
+          );
           await sleep(STEP_MS);
           emit({
             zone: "buyer",
-            msg: report.result
-              ? `Market read: ${report.result}`
-              : "Live report acquired.",
+            msg: out.delivered
+              ? out.report.result
+                ? `Market read: ${out.report.result}`
+                : "Live report acquired."
+              : "Seller declined — no data delivered; payment held in escrow.",
             stream: true,
             final: true,
           });
@@ -638,13 +739,27 @@ export async function GET(request: Request) {
             emit({ zone: "buyer", msg: "Decides to buy the live report — initiating x402 payment" });
             await sleep(STEP_MS);
 
-            const report = await runX402Payment(resource, emit, agent, resourceDef.id, recorded, treasury);
+            const out = await runX402Payment(
+              resource,
+              emit,
+              agent,
+              resourceDef.id,
+              recorded,
+              treasury,
+              apiKey,
+              forceDecline,
+            );
             paid = true;
 
             toolResults.push({
               type: "tool_result",
               tool_use_id: toolUse.id,
-              content: JSON.stringify(report),
+              content: out.delivered
+                ? JSON.stringify({ status: "delivered", report: out.report })
+                : JSON.stringify({
+                    status: "not_delivered",
+                    note: "The seller declined to deliver. Your payment is held in escrow; if it is not delivered by the deadline you can file an insurance claim. You do not have the data.",
+                  }),
             });
           }
 

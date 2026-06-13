@@ -13,6 +13,7 @@ const NAV: NavItem[] = [
   { href: "/analytics", label: "Analytics", icon: "chart", match: (p) => p.startsWith("/analytics") },
   { href: "/plugins", label: "Plugins", icon: "plug", match: (p) => p.startsWith("/plugins") },
   { href: "/resources", label: "Resources", icon: "feed", match: (p) => p.startsWith("/resources") },
+  { href: "/two-key", label: "Two-Key Halt", icon: "lock", match: (p) => p.startsWith("/two-key") },
 ];
 
 export function Sidebar({ onToggle }: { onToggle?: () => void }) {
