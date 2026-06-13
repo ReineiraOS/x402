@@ -465,3 +465,67 @@ After those 2 txs, coverage purchase + payout go fully live with NO code changes
 - readiness/sim: cd apps/demo && npx tsx scripts/insurance-check.mts check
 - resolver e2e: npx tsx scripts/insurance-check.mts resolver
 - covered run:  curl -sN "http://localhost:3000/api/run?agentId=<insured-buyer-id>&resourceId=eth-report&treasury=0x54165be2dE20FCF71B4c8F0db87c040512777Ea7"
+
+## ═══ SESSION HANDOFF (2026-06-11/12 — INSURANCE LIVE + claim/payout BUILT & PROVEN) ═══
+
+RESUME HERE. Insurance is now FULLY LIVE on-chain and the full delivery-breach
+story (buy → coverage → breach → claim → payout) is proven end-to-end. Work is
+committed + pushed to `feat/dev-209-x402-core`; **PR #5 updated, NOT merged.**
+
+### ⚠️ THIS CHECKOUT IS A REVIEW-CLONE (critical context)
+The recent dev (commit c57ecb0 / the 06-10 sessions) happened on ANOTHER machine. This local
+`x402-rss` was 1 commit behind and had a STALE `dist/` + a doplevel `.env.local`. Two gotchas that
+cost time (now fixed, but they recur on any fresh pull):
+1. **Stale workspace dist after fast-forward** → demo `Module not found: @reineira-os/x402-core/exact/escrow`.
+   Fix: `pnpm install` → `pnpm --filter @reineira-os/x402-rss-shared build` → `pnpm --filter @reineira-os/x402-core build` (shared BEFORE core).
+2. **Long-running facilitator caches old core in memory** → x402 pays fail `invalid_exact_evm_signature`
+   even though the signature is valid. Fix: **RESTART the facilitator after any core rebuild.**
+`.env.local` was repopulated from the other laptop (all addrs in REAL ADDRESS MAP + the 06-10c section).
+
+### RUNNING STATE
+- Facilitator :4021 UP — `cd packages/facilitator && FACILITATOR_PORT=4021 ARBITRUM_SEPOLIA_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc FACILITATOR_PRIVATE_KEY=$(grep -E '^FACILITATOR_PRIVATE_KEY=' ../../apps/demo/.env.local | cut -d= -f2-) npx tsx src/server.ts`
+- Demo :3000 UP — `cd apps/demo && npx next dev -p 3000` (auto-loads `.env.local`).
+- Agent **Insured Buyer** id `458a2ed2-f9f1-4d4d-b986-6d80fc2fb0bc` (delivery-coverage-policy, **deadline lowered to 60s** this session for a snappy breach demo).
+- Treasury (Model B, passkey, V0_0_3) **`0x5587847eC36576D17005036aC30507c47Cb01612`** — DEPLOYED, ~19.8 USDC, budget 20, session granted. (Different from the other laptop's `0x54165be2…`.)
+
+### INSURANCE WENT FULLY LIVE (3 owner-setup txs landed)
+- `escrow.setInsuranceManager(CoverageManager)` + `registry.registerPolicy(DeliveryPolicy)` — Deployer key `0xa2293a…` (Vladimir ran these in his terminal).
+- `pool.addPolicy(0xc90bd0fc…)` on pool id 12 — SELLER key `0x213CE2FB…` (tx `0x2124bf25…`).
+- `insurance-check.mts check` all-green (insuranceManager set ✓, policy allow-listed ✓, purchaseCoverage sim ✓). Pool staked 2 USDC (capped payouts → ~20 claims of 0.10).
+
+### FULL MODEL B COVERED-RUN PROVEN E2E (real on-chain)
+- settle treasury→escrow (e.g. #93 tx `0x40745070…`) + **real coverage active** (coverage #2 tx `0xb05f25e9…`), data delivered. Coverage records a real coverageId/tx (no longer `pending-setup`).
+
+### CLAIM/PAYOUT BUILT THIS SESSION (two bugs fixed) — committed
+- **Bug 1: `/api/coverage/claim` route was MISSING from git.** `.gitignore` line `coverage/` (meant for test reports)
+  also matched `apps/demo/app/api/coverage/` → the route never committed (silently, on both laptops). Fixed with a
+  `!apps/demo/app/api/coverage/` negation; **rebuilt the route**: `dispute(coverageId,"0x")` sent FROM the treasury via
+  `lib/sessionWallet.sendFromTreasury` (holder == msg.sender) → pool pays the coverage amount back to the treasury.
+  `DeliveryPolicy.judge` ignores the proof bytes and just reads `resolver.isBreached(escrowId)`, so proof = `"0x"`.
+- **Bug 2: coverage expired ~at the deadline** (expiry was set to the delivery deadline → ~0s claim window after a breach).
+  Fixed in `/api/run`: coverage `expiry = deliveryDeadline + CLAIM_WINDOW (3600s)`.
+- **PROVEN on escrow #93:** deadline passed → `isBreached=true` → claim → **0.10 USDC paid pool→treasury** (treasury 19.7→19.8, tx `0x07c78217…`). typecheck green.
+- Commits on `feat/dev-209-x402-core`: `9098641` feat(demo) claim payout, `b87febc` docs. Pushed; PR #5 updated (NOT merged — awaiting Vladimir's go).
+
+### THE BIG OPEN DECISION (Vladimir's actual ask vs what's built)
+Vladimir wants the **quality/latent-defect** story: *buy → looks ok → LATER find errors → dispute → payout*.
+**What's built is delivery-breach** (seller fails to `attestDelivery` before the deadline → payout). The on-chain
+policy judges ONLY `isBreached` (non-delivery); it does NOT judge data quality. The defect story = candidate Z /
+the open "quality adjudication" problem ([[project_settlement_mechanic_reopened]]) — needs a NEW defect resolver+policy
+(parametric / oracle / operator-attested / buyer-asserted-with-challenge) + deploy. A/B was left OPEN:
+- A = delivery-breach (DONE + demoable now).  B = quality-defect (Vladimir's vision; design + build needed).
+
+### OPEN TAILS / NEXT WORK
+1. **Decide A vs B** (above). If B → brainstorm the defect-adjudication model first.
+2. **UX bug:** in a breach state the pipe still shows a dead green "Release →"; the working "File claim →" lives only in
+   the Purchases tab. Make the pipe surface "File claim →" on breach (what confused Vladimir on-screen).
+3. Existing escrows #91/#92 have EXPIRED coverage (the pre-fix bug) → not claimable; ignore them. Fresh runs are claimable.
+4. PR #5: merge to main? + update PR body (it doesn't mention the claim route / 2 fixes yet).
+
+### KEY ADDRESSES (insurance)
+CoverageManager `0x3fcD1896745B2b91b4397e7E762910Fbf7eE9D22` · DeliveryPolicy `0xc90bd0fc6515a1152d1776ad19a39b76d8670e1c` ·
+DeliveryDeadlineResolver `0xf1cf91d4c1efb055d648b3d8d73f9c86446cdcc0` · Pool id12 `0x3B345841d2bB6eF1Ef2E8E7BD9ce94598dBC6fA6` · USDC `0x75faf…AA4d`.
+
+### VERIFY (claim)
+- breach a fresh run: Insured Buyer Run deal → wait 60s → `cast call <resolver> "isBreached(uint256)(bool)" <id>` → true.
+- claim: `curl -s -X POST localhost:3000/api/coverage/claim -H 'content-type: application/json' -d '{"escrowId":"<id>"}'` → `{txHash, payoutAtomic:"100000"}`; treasury USDC +0.10.
