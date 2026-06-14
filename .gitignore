@@ -27,3 +27,4 @@ Thumbs.db
 
 # Local review/orchestration harness (absolute paths; not part of the deliverable)
 tasks/review-workflow.js
+.vercel

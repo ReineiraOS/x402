@@ -159,6 +159,25 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.19.19)
 
+  packages/facilitator-web:
+    dependencies:
+      '@reineira-os/x402-facilitator':
+        specifier: workspace:*
+        version: link:../facilitator
+      hono:
+        specifier: ^4.6.0
+        version: 4.12.23
+      viem:
+        specifier: ^2.21.0
+        version: 2.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.3)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   packages/rss:
     dependencies:
       '@openzeppelin/contracts':

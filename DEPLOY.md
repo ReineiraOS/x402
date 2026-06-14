@@ -2,10 +2,16 @@
 
 This monorepo ships **two** Vercel projects from the same repository:
 
-| Project         | Root Directory         | Framework | What it is                                        |
-| --------------- | ---------------------- | --------- | ------------------------------------------------- |
-| **Facilitator** | `packages/facilitator` | Other     | x402 settlement facilitator (Hono serverless API) |
-| **Demo**        | `apps/demo`            | Next.js   | The insured-settlement showcase UI                |
+| Project         | Root Directory             | Framework | What it is                                        |
+| --------------- | -------------------------- | --------- | ------------------------------------------------- |
+| **Facilitator** | `packages/facilitator-web` | Hono      | x402 settlement facilitator (Hono serverless API) |
+| **Demo**        | `apps/demo`                | Next.js   | The insured-settlement showcase UI                |
+
+> The facilitator is deployed via the thin **`packages/facilitator-web`** entry package, not
+> `packages/facilitator` directly. Vercel's Hono preset detects the entry by finding the file
+> that imports `hono` and `export default`s a Hono app — the library package
+> `packages/facilitator` only exposes named exports, so a dedicated `export default app` entry
+> is required. Verified live: `GET /supported` and `GET /healthz` → 200, `POST /verify {}` → 400.
 
 The Solidity packages (`packages/rss`, `packages/contracts`) are **not** deployed to Vercel —
 they are smart contracts, deployed separately to Arbitrum Sepolia.
@@ -16,21 +22,26 @@ Deploy the **facilitator first** so you have its URL, then set that URL on the d
 
 ## 1. Facilitator project
 
-**New Project → import this repo → set Root Directory to `packages/facilitator`.**
+**New Project → import this repo → set Root Directory to `packages/facilitator-web`.**
 
-- Framework Preset: **Other**. No output directory is needed — the `api/` function is the output.
-- Install / Build commands come from `packages/facilitator/vercel.json` (they build the
-  workspace libraries the facilitator imports). Leave the dashboard overrides off.
+- Framework Preset: **Hono** (also pinned in `packages/facilitator-web/vercel.json`).
+- The `installCommand` in that `vercel.json` builds the facilitator + its workspace libs
+  (`pnpm --filter "@reineira-os/x402-facilitator..." run build`). Leave dashboard overrides off.
+- The entry `packages/facilitator-web/index.ts` imports `hono` and `export default`s the app —
+  this is what the Hono preset needs (the `packages/facilitator` library has named exports only).
 
 Environment variables:
 
-| Variable                   | Required    | Notes                                                                           |
-| -------------------------- | ----------- | ------------------------------------------------------------------------------- |
-| `FACILITATOR_PRIVATE_KEY`  | ✅          | EOA that relays `receiver.settle`. Needs a little Arbitrum Sepolia ETH for gas. |
-| `ARBITRUM_SEPOLIA_RPC_URL` | recommended | e.g. `https://sepolia-rollup.arbitrum.io/rpc`                                   |
+| Variable                   | Required | Notes                                                                           |
+| -------------------------- | -------- | ------------------------------------------------------------------------------- |
+| `FACILITATOR_PRIVATE_KEY`  | ✅       | EOA that relays `receiver.settle`. Needs a little Arbitrum Sepolia ETH for gas. |
+| `ARBITRUM_SEPOLIA_RPC_URL` | ✅       | e.g. `https://sepolia-rollup.arbitrum.io/rpc`. Read at cold-start.              |
 
-After deploy, note the URL (e.g. `https://x402-facilitator.vercel.app`). The endpoints are
-served under `/` via the catch-all rewrite (e.g. `POST /verify`, `POST /settle`, `GET /supported`).
+Routes serve at the root: `GET /healthz`, `GET /supported`, `POST /verify`, `POST /settle`.
+Note the deployment URL (e.g. `https://x402-facilitator.vercel.app`) for the demo's `FACILITATOR_URL`.
+
+> Preview deployments are protected by the team's SSO. To smoke-test a preview from a terminal:
+> `vercel curl /supported --deployment <preview-url> --scope <team>` (it mints a bypass token).
 
 ---
 
