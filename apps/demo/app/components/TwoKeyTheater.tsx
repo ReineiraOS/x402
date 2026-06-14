@@ -45,8 +45,16 @@ type VaultView = {
 const VAULT_COPY: Record<VaultState, { state: string; banner?: string; icon: string }> = {
   idle: { state: "awaiting run", icon: "lock" },
   healthy: { state: "healthy · floor held", icon: "shield" },
-  bonded: { state: "ALERT · bonded", banner: "ALERT · bonded — a stake bought the right to speak", icon: "bolt" },
-  draining: { state: "invariant broken", banner: "invariant broken — totalAssets < floor", icon: "alert" },
+  bonded: {
+    state: "ALERT · bonded",
+    banner: "ALERT · bonded — a stake bought the right to speak",
+    icon: "bolt",
+  },
+  draining: {
+    state: "invariant broken",
+    banner: "invariant broken — totalAssets < floor",
+    icon: "alert",
+  },
   paused: { state: "PAUSED · funds safe", icon: "lock" },
   safe: { state: "PAUSED · funds safe · exploit averted", icon: "check" },
 };
@@ -82,7 +90,11 @@ export function TwoKeyTheater() {
   const [running, setRunning] = useState(false);
   const [falseAlarm, setFalseAlarm] = useState(false);
   const [log, setLog] = useState<LogLine[]>([]);
-  const [vault, setVault] = useState<VaultView>({ state: "idle", totalAssets: null, recordedFloor: null });
+  const [vault, setVault] = useState<VaultView>({
+    state: "idle",
+    totalAssets: null,
+    recordedFloor: null,
+  });
   const [lastZone, setLastZone] = useState<Zone | null>(null);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
 
@@ -102,8 +114,10 @@ export function TwoKeyTheater() {
   );
 
   const pushLog = useCallback((line: Omit<LogLine, "id">) => {
-    idRef.current += 1;
-    setLog((prev) => [...prev, { id: idRef.current, ...line }]);
+    // Capture the id synchronously per call: reading idRef inside the deferred setState
+    // updater makes every batched updater see the final value → duplicate keys.
+    const id = (idRef.current += 1);
+    setLog((prev) => [...prev, { id, ...line }]);
   }, []);
 
   const handleEvent = useCallback(
@@ -139,7 +153,8 @@ export function TwoKeyTheater() {
         setVerdict(event.status);
       }
 
-      const inlineLabel = event.label === "staged" || event.label === "scripted" ? event.label : undefined;
+      const inlineLabel =
+        event.label === "staged" || event.label === "scripted" ? event.label : undefined;
       pushLog({
         zone,
         msg: event.msg ?? "",
@@ -189,7 +204,11 @@ export function TwoKeyTheater() {
       }
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") return;
-      pushLog({ zone: "system", msg: error instanceof Error ? error.message : String(error), error: true });
+      pushLog({
+        zone: "system",
+        msg: error instanceof Error ? error.message : String(error),
+        error: true,
+      });
     } finally {
       setRunning(false);
     }
@@ -240,7 +259,10 @@ export function TwoKeyTheater() {
             </>
           )}
         </button>
-        <label className={styles.controls__check} title="Raise an alarm on a healthy vault — the verdict comes back FALSE and the bond is slashed.">
+        <label
+          className={styles.controls__check}
+          title="Raise an alarm on a healthy vault — the verdict comes back FALSE and the bond is slashed."
+        >
           <input
             type="checkbox"
             checked={falseAlarm}
@@ -257,14 +279,18 @@ export function TwoKeyTheater() {
       {/* Theater: Sentinel · Vault · Guardian */}
       <div className={styles.theater}>
         {/* Sentinel */}
-        <div className={`${styles.actor} ${styles["actor--sentinel"]}${sentinelActive ? ` ${styles["actor--active"]}` : ""}`}>
+        <div
+          className={`${styles.actor} ${styles["actor--sentinel"]}${sentinelActive ? ` ${styles["actor--active"]}` : ""}`}
+        >
           <div className={styles.actor__head}>
             <span className={styles.actor__chip}>
               <Icon name="fingerprint" size={19} stroke={1.8} />
             </span>
             <div className={styles.actor__id}>
               <span className={styles.actor__name}>Sentinel</span>
-              <span className={styles.actor__role}>watches the vault · stakes a bond to raise an alarm</span>
+              <span className={styles.actor__role}>
+                watches the vault · stakes a bond to raise an alarm
+              </span>
             </div>
           </div>
           <div className={styles.actor__body}>
@@ -291,7 +317,8 @@ export function TwoKeyTheater() {
           <div className={styles.actor__body} style={{ alignItems: "center", gap: 12 }}>
             <span className={styles.vault__bignum}>{formatUsdc(vault.totalAssets)}</span>
             <span className={styles.vault__floor}>
-              <span className={styles["vault__floor-marker"]} aria-hidden /> floor {formatUsdc(vault.recordedFloor)}
+              <span className={styles["vault__floor-marker"]} aria-hidden /> floor{" "}
+              {formatUsdc(vault.recordedFloor)}
             </span>
             <span className={styles.vault__state}>{copy.state}</span>
             {copy.banner ? <span className={styles.vault__banner}>{copy.banner}</span> : null}
@@ -299,7 +326,9 @@ export function TwoKeyTheater() {
         </div>
 
         {/* Guardian */}
-        <div className={`${styles.actor} ${styles["actor--guardian"]}${guardianActive ? ` ${styles["actor--active"]}` : ""}`}>
+        <div
+          className={`${styles.actor} ${styles["actor--guardian"]}${guardianActive ? ` ${styles["actor--active"]}` : ""}`}
+        >
           <div className={styles.actor__head}>
             <span className={styles.actor__chip}>
               <Icon name={verdict === "VALID" ? "check" : "shield"} size={19} stroke={1.8} />
@@ -311,7 +340,9 @@ export function TwoKeyTheater() {
           </div>
           <div className={styles.actor__body}>
             {verdict ? (
-              <span className={`${styles.verdict} ${verdict === "VALID" ? styles["verdict--valid"] : styles["verdict--false"]}`}>
+              <span
+                className={`${styles.verdict} ${verdict === "VALID" ? styles["verdict--valid"] : styles["verdict--false"]}`}
+              >
                 <Icon name={verdict === "VALID" ? "check" : "alert"} size={16} stroke={2.4} />
                 {verdict === "VALID" ? "VALID" : "FALSE"}
               </span>
@@ -373,11 +404,15 @@ function LogRow({ line }: { line: LogLine }) {
   }
   return (
     <div className={`${styles.row}${line.error ? ` ${styles["row--error"]}` : ""}`}>
-      <span className={`${styles.row__gutter} ${styles[`row__gutter--${line.zone}`] ?? ""}`}>{line.zone}</span>
+      <span className={`${styles.row__gutter} ${styles[`row__gutter--${line.zone}`] ?? ""}`}>
+        {line.zone}
+      </span>
       <span className={styles.row__body}>
         {line.msg}
         {line.label ? (
-          <span className={`${styles["inline-chip"]} ${styles[`inline-chip--${line.label}`] ?? ""}`}>
+          <span
+            className={`${styles["inline-chip"]} ${styles[`inline-chip--${line.label}`] ?? ""}`}
+          >
             {line.label.toUpperCase()}
           </span>
         ) : null}

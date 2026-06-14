@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Icon } from "../../../../ui/Icon";
 import { MaturityStatusBadge } from "../../../../ui/badges";
-import { formatDeadline, type ClientAgent, type PluginManifest } from "../../../components/agentTypes";
+import {
+  formatDeadline,
+  type ClientAgent,
+  type PluginManifest,
+} from "../../../components/agentTypes";
 
 const DEADLINE_PRESETS = [
   { label: "1 min", value: 60 },
@@ -31,34 +35,39 @@ export default function EditAgentPage() {
   const [isDefault, setIsDefault] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [nameTouched, setNameTouched] = useState(false);
 
   useEffect(() => {
     let active = true;
     (async () => {
-      const [agentRes, pluginsRes] = await Promise.all([
-        fetch(`/api/agents/${id}`, { cache: "no-store" }),
-        fetch("/api/plugins", { cache: "no-store" }),
-      ]);
-      if (!active) return;
-      if (agentRes.status === 404) {
-        setNotFound(true);
-        setLoading(false);
-        return;
+      try {
+        const [agentRes, pluginsRes] = await Promise.all([
+          fetch(`/api/agents/${id}`, { cache: "no-store" }),
+          fetch("/api/plugins", { cache: "no-store" }),
+        ]);
+        if (!active) return;
+        if (agentRes.status === 404) {
+          setNotFound(true);
+          return;
+        }
+        const agentJson = (await agentRes.json()) as { agent?: ClientAgent };
+        const pluginsJson = (await pluginsRes.json()) as { plugins?: PluginManifest[] };
+        if (!active) return;
+        if (agentJson.agent) {
+          setName(agentJson.agent.name);
+          setPrePrompt(agentJson.agent.prePrompt);
+          setPluginIds(agentJson.agent.pluginIds);
+          setDeadlineSeconds(agentJson.agent.deadlineSeconds);
+          setIsDefault(!!agentJson.agent.isDefault);
+        } else {
+          setNotFound(true);
+        }
+        setPlugins(pluginsJson.plugins ?? []);
+      } catch {
+        if (active) setNotFound(true);
+      } finally {
+        if (active) setLoading(false);
       }
-      const agentJson = (await agentRes.json()) as { agent?: ClientAgent };
-      const pluginsJson = (await pluginsRes.json()) as { plugins?: PluginManifest[] };
-      if (!active) return;
-      if (agentJson.agent) {
-        setName(agentJson.agent.name);
-        setPrePrompt(agentJson.agent.prePrompt);
-        setPluginIds(agentJson.agent.pluginIds);
-        setDeadlineSeconds(agentJson.agent.deadlineSeconds);
-        setIsDefault(!!agentJson.agent.isDefault);
-      } else {
-        setNotFound(true);
-      }
-      setPlugins(pluginsJson.plugins ?? []);
-      setLoading(false);
     })();
     return () => {
       active = false;
@@ -70,8 +79,26 @@ export default function EditAgentPage() {
       prev.includes(pluginId) ? prev.filter((p) => p !== pluginId) : [...prev, pluginId],
     );
 
+  const NAME_MAX = 40;
+  const PROMPT_MAX = 300;
+  const DEADLINE_MIN = 10;
+  const DEADLINE_MAX = 86400;
+  const trimmedName = name.trim();
+  const nameError =
+    trimmedName.length === 0
+      ? "Give the agent a name."
+      : trimmedName.length > NAME_MAX
+        ? `Keep the name under ${NAME_MAX} characters.`
+        : null;
+  const promptOver = prePrompt.length > PROMPT_MAX;
+  const deadlineError =
+    deadlineSeconds < DEADLINE_MIN || deadlineSeconds > DEADLINE_MAX
+      ? `Pick a release window between ${DEADLINE_MIN}s and ${DEADLINE_MAX / 3600}h.`
+      : null;
+  const canSave = !nameError && !promptOver && !deadlineError && pluginIds.length > 0;
+
   const save = useCallback(async () => {
-    if (saving || !name.trim()) return;
+    if (saving || nameError || promptOver || deadlineError || pluginIds.length === 0) return;
     setSaving(true);
     setError(null);
     try {
@@ -114,7 +141,9 @@ export default function EditAgentPage() {
     return (
       <div className="container wizard">
         <div className="page__empty">
-          <span className="spin" aria-hidden>◠</span>
+          <span className="spin" aria-hidden>
+            ◠
+          </span>
           loading agent…
         </div>
       </div>
@@ -126,7 +155,9 @@ export default function EditAgentPage() {
       <div className="container wizard">
         <div className="page__empty bw-card">
           <p>Agent not found.</p>
-          <Link href="/" className="btn-cta">Back to agents</Link>
+          <Link href="/" className="btn-cta">
+            Back to agents
+          </Link>
         </div>
       </div>
     );
@@ -136,7 +167,8 @@ export default function EditAgentPage() {
     <div className="container wizard">
       <div className="wizard__head">
         <Link href={`/agents/${id}`} className="btn-outline wizard__back">
-          <Icon name="arrowRight" size={14} stroke={2} style={{ transform: "rotate(180deg)" }} /> Back
+          <Icon name="arrowRight" size={14} stroke={2} style={{ transform: "rotate(180deg)" }} />{" "}
+          Back
         </Link>
         <h1 className="edit__title">Edit agent</h1>
         <span className="wizard__counter">wallet locked</span>
@@ -146,8 +178,8 @@ export default function EditAgentPage() {
         <div className="wizard__section">
           <h2 className="wizard__title">Identity</h2>
           <p className="wizard__hint">
-            Change the name and standing instructions. The agent keeps its smart wallet and address —
-            funds and history are untouched.
+            Change the name and standing instructions. The agent keeps its smart wallet and address
+            — funds and history are untouched.
           </p>
           <label className="field">
             <span className="field__label">Name</span>
@@ -155,26 +187,48 @@ export default function EditAgentPage() {
               className="field__input"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onBlur={() => setNameTouched(true)}
+              maxLength={NAME_MAX}
+              aria-invalid={nameTouched && !!nameError}
               autoFocus
             />
+            {nameTouched && nameError ? (
+              <span className="field__error">
+                <Icon name="alert" size={13} stroke={2} /> {nameError}
+              </span>
+            ) : null}
           </label>
           <label className="field">
-            <span className="field__label">Pre-prompt</span>
+            <div className="field__row">
+              <span className="field__label">
+                Pre-prompt <span className="field__opt">optional</span>
+              </span>
+              <span className={`field__counter${promptOver ? " field__counter--over" : ""}`}>
+                {prePrompt.length}/{PROMPT_MAX}
+              </span>
+            </div>
             <textarea
               className="field__textarea"
               placeholder="Personality / standing instructions"
               value={prePrompt}
               onChange={(e) => setPrePrompt(e.target.value)}
               rows={4}
+              aria-invalid={promptOver}
             />
+            {promptOver ? (
+              <span className="field__error">
+                <Icon name="alert" size={13} stroke={2} /> {prePrompt.length - PROMPT_MAX} character
+                {prePrompt.length - PROMPT_MAX === 1 ? "" : "s"} over the limit.
+              </span>
+            ) : null}
           </label>
         </div>
 
         <div className="wizard__section edit__section">
           <h2 className="wizard__title">Plugins</h2>
           <p className="wizard__hint">
-            Condition resolvers gate how this agent&apos;s payments release. TimeLock is the mandatory
-            anti-stranding default.
+            Condition resolvers gate how this agent&apos;s payments release. TimeLock is the
+            mandatory anti-stranding default.
           </p>
           <div className="plugin-list">
             {plugins.map((plugin) => {
@@ -214,7 +268,9 @@ export default function EditAgentPage() {
                       <div className="plugin-config__head">
                         <Icon name="clock" size={14} stroke={2} />
                         <span className="plugin-config__title">Release after</span>
-                        <span className="plugin-config__hint mono">resolverData: uint256 deadline</span>
+                        <span className="plugin-config__hint mono">
+                          resolverData: uint256 deadline
+                        </span>
                       </div>
                       <div className="deadline-presets">
                         {DEADLINE_PRESETS.map((preset) => (
@@ -231,19 +287,26 @@ export default function EditAgentPage() {
                           custom
                           <input
                             type="number"
-                            min={10}
+                            min={DEADLINE_MIN}
+                            max={DEADLINE_MAX}
                             className="deadline-custom__input"
                             value={deadlineSeconds}
+                            aria-invalid={!!deadlineError}
                             onChange={(e) =>
-                              setDeadlineSeconds(Math.max(10, Number(e.target.value) || 10))
+                              setDeadlineSeconds(
+                                Math.min(
+                                  DEADLINE_MAX,
+                                  Math.max(DEADLINE_MIN, Number(e.target.value) || DEADLINE_MIN),
+                                ),
+                              )
                             }
                           />
                           s
                         </label>
                       </div>
                       <p className="plugin-config__note">
-                        New deals hold funds in escrow until {formatDeadline(deadlineSeconds)} after the
-                        agent pays. Deals already in flight keep their original window.
+                        New deals hold funds in escrow until {formatDeadline(deadlineSeconds)} after
+                        the agent pays. Deals already in flight keep their original window.
                       </p>
                     </div>
                   ) : null}
@@ -257,9 +320,14 @@ export default function EditAgentPage() {
           <div className="wizard__section edit__section edit__danger">
             <h2 className="wizard__title">Delete agent</h2>
             <p className="wizard__hint">
-              Removes this agent and its purchase history. The treasury and its funds are unaffected.
+              Removes this agent and its purchase history. The treasury and its funds are
+              unaffected.
             </p>
-            <button className="btn-outline edit__delete" onClick={() => setConfirmOpen(true)} disabled={deleting}>
+            <button
+              className="btn-outline edit__delete"
+              onClick={() => setConfirmOpen(true)}
+              disabled={deleting}
+            >
               <Icon name="x" size={14} stroke={2} /> {deleting ? "Deleting…" : "Delete this agent"}
             </button>
           </div>
@@ -272,14 +340,23 @@ export default function EditAgentPage() {
         <Link href={`/agents/${id}`} className="btn-outline">
           Cancel
         </Link>
-        <button className="btn-cta" onClick={() => void save()} disabled={saving || !name.trim()}>
+        <button className="btn-cta" onClick={() => void save()} disabled={saving || !canSave}>
           {saving ? "Saving…" : "Save changes"}
         </button>
       </div>
 
       {confirmOpen ? (
-        <div className="pd-overlay" onClick={() => !deleting && setConfirmOpen(false)} role="presentation">
-          <div className="pd pd--confirm bw-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal>
+        <div
+          className="pd-overlay"
+          onClick={() => !deleting && setConfirmOpen(false)}
+          role="presentation"
+        >
+          <div
+            className="pd pd--confirm bw-card"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal
+          >
             <div className="confirm">
               <span className="confirm__icon" aria-hidden>
                 <Icon name="alert" size={26} stroke={2.2} />

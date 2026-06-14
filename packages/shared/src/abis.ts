@@ -229,6 +229,16 @@ export const escrowAbi = [
   },
   {
     type: "function",
+    name: "fund",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "escrowId", type: "uint256" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
     name: "redeem",
     stateMutability: "nonpayable",
     inputs: [{ name: "escrowId", type: "uint256" }],
@@ -274,20 +284,6 @@ export const escrowAbi = [
     name: "EscrowCreated",
     anonymous: false,
     inputs: [{ name: "escrowId", type: "uint256", indexed: true }],
-  },
-  {
-    type: "function",
-    name: "isFunded",
-    stateMutability: "view",
-    inputs: [{ name: "escrowId", type: "uint256" }],
-    outputs: [{ name: "", type: "bool" }],
-  },
-  {
-    type: "function",
-    name: "status",
-    stateMutability: "view",
-    inputs: [{ name: "escrowId", type: "uint256" }],
-    outputs: [{ name: "", type: "uint8" }],
   },
   {
     type: "function",

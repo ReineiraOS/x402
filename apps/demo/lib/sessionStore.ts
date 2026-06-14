@@ -1,7 +1,6 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { getAddress, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { createDocStore } from "./store/docStore";
 
 export interface SessionRecord {
   sessionKeyPrivateKey: Hex;
@@ -13,22 +12,18 @@ export interface SessionRecord {
 
 type SessionStore = Record<string, SessionRecord>;
 
-const STORE_FILE = path.join(process.cwd(), ".session-store.json");
+const docStore = createDocStore<SessionStore>({
+  fileName: ".session-store.json",
+  pgKey: "session-store",
+  empty: () => ({}),
+});
 
-async function readStore(): Promise<SessionStore> {
-  try {
-    const raw = await fs.readFile(STORE_FILE, "utf8");
-    return JSON.parse(raw) as SessionStore;
-  } catch {
-    return {};
-  }
-}
+const readStore = (): Promise<SessionStore> => docStore.read();
+const writeStore = (store: SessionStore): Promise<void> => docStore.write(store);
 
-async function writeStore(store: SessionStore): Promise<void> {
-  const tmp = `${STORE_FILE}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(store, null, 2), "utf8");
-  await fs.rename(tmp, STORE_FILE);
-}
+// Serialize each read-modify-write so two overlapping runs against the same treasury
+// can't lost-update the spend counter.
+const withLock = docStore.withLock;
 
 function key(treasury: string): string {
   return getAddress(treasury);
@@ -39,17 +34,19 @@ function key(treasury: string): string {
 export async function getOrCreateSessionKey(
   treasury: string,
 ): Promise<{ sessionKeyAddress: `0x${string}` }> {
-  const store = await readStore();
-  const k = key(treasury);
-  if (!store[k]) {
-    const sessionKeyPrivateKey = generatePrivateKey();
-    store[k] = {
-      sessionKeyPrivateKey,
-      sessionKeyAddress: privateKeyToAccount(sessionKeyPrivateKey).address,
-    };
-    await writeStore(store);
-  }
-  return { sessionKeyAddress: store[k].sessionKeyAddress };
+  return withLock(async () => {
+    const store = await readStore();
+    const k = key(treasury);
+    if (!store[k]) {
+      const sessionKeyPrivateKey = generatePrivateKey();
+      store[k] = {
+        sessionKeyPrivateKey,
+        sessionKeyAddress: privateKeyToAccount(sessionKeyPrivateKey).address,
+      };
+      await writeStore(store);
+    }
+    return { sessionKeyAddress: store[k].sessionKeyAddress };
+  });
 }
 
 // Store the passkey-signed approval together with the configured spend budget.
@@ -59,23 +56,27 @@ export async function saveGrant(
   approval: string,
   budgetAtomic: string,
 ): Promise<boolean> {
-  const store = await readStore();
-  const k = key(treasury);
-  if (!store[k]) return false;
-  store[k].approval = approval;
-  store[k].budgetAtomic = budgetAtomic;
-  store[k].spentAtomic = "0";
-  await writeStore(store);
-  return true;
+  return withLock(async () => {
+    const store = await readStore();
+    const k = key(treasury);
+    if (!store[k]) return false;
+    store[k].approval = approval;
+    store[k].budgetAtomic = budgetAtomic;
+    store[k].spentAtomic = "0";
+    await writeStore(store);
+    return true;
+  });
 }
 
 export async function addSpent(treasury: string, amountAtomic: bigint): Promise<void> {
-  const store = await readStore();
-  const k = key(treasury);
-  if (!store[k]) return;
-  const prev = BigInt(store[k].spentAtomic ?? "0");
-  store[k].spentAtomic = (prev + amountAtomic).toString();
-  await writeStore(store);
+  await withLock(async () => {
+    const store = await readStore();
+    const k = key(treasury);
+    if (!store[k]) return;
+    const prev = BigInt(store[k].spentAtomic ?? "0");
+    store[k].spentAtomic = (prev + amountAtomic).toString();
+    await writeStore(store);
+  });
 }
 
 export async function getSession(treasury: string): Promise<SessionRecord | null> {

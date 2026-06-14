@@ -1,9 +1,4 @@
-import {
-  getAddress,
-  hashTypedData,
-  recoverTypedDataAddress,
-  type Hex,
-} from "viem";
+import { getAddress, hashTypedData, recoverTypedDataAddress, type Hex } from "viem";
 import { erc3009Abi } from "@reineira-os/x402-rss-shared";
 import type {
   ExactEvmAuthorization,
@@ -110,9 +105,7 @@ async function isSignatureValid(
   }
 
   try {
-    const digest = hashTypedData(
-      typedData as Parameters<typeof hashTypedData>[0],
-    );
+    const digest = hashTypedData(typedData as Parameters<typeof hashTypedData>[0]);
     const magic = (await publicClient.readContract({
       address: signer,
       abi: erc1271Abi,
@@ -131,7 +124,13 @@ export async function verifyExact(
   ctx: VerifyExactContext,
 ): Promise<VerifyResponse> {
   const exact = extractExactPayload(payload);
-  const auth: ExactEvmAuthorization = exact.authorization;
+  // Structurally malformed payloads are a client error, not a verifier fault: return a
+  // structured invalid result so the facilitator can answer cleanly instead of throwing a
+  // TypeError that surfaces as a misleading 502.
+  const auth = exact?.authorization as ExactEvmAuthorization | undefined;
+  if (!auth || !payload.accepted || typeof exact.signature !== "string") {
+    return { isValid: false, invalidReason: ErrInvalidScheme };
+  }
   const payer = auth.from;
 
   if (payload.accepted.scheme !== "exact" || requirements.scheme !== "exact") {
@@ -165,12 +164,8 @@ export async function verifyExact(
       chainId: getEvmChainId(requirements.network),
       verifyingContract: erc20Address,
     },
-    types: escrowExtra
-      ? ReceiveWithAuthorizationTypes
-      : TransferWithAuthorizationTypes,
-    primaryType: escrowExtra
-      ? "ReceiveWithAuthorization"
-      : "TransferWithAuthorization",
+    types: escrowExtra ? ReceiveWithAuthorizationTypes : TransferWithAuthorizationTypes,
+    primaryType: escrowExtra ? "ReceiveWithAuthorization" : "TransferWithAuthorization",
     message: {
       from: getAddress(auth.from),
       to: getAddress(auth.to),
@@ -199,10 +194,7 @@ export async function verifyExact(
     if (getAddress(requirements.payTo) !== escrowExtra.receiver) {
       return { isValid: false, invalidReason: ErrEscrowReceiverMismatch, payer };
     }
-    const expectedNonce = deriveEscrowNonce(
-      BigInt(escrowExtra.escrowId),
-      escrowExtra.salt,
-    );
+    const expectedNonce = deriveEscrowNonce(BigInt(escrowExtra.escrowId), escrowExtra.salt);
     if (auth.nonce.toLowerCase() !== expectedNonce.toLowerCase()) {
       return { isValid: false, invalidReason: ErrEscrowNonceMismatch, payer };
     }

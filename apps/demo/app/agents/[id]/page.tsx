@@ -12,7 +12,11 @@ import {
   type ClientAgent,
   type SpendRecord,
 } from "../../components/agentTypes";
-import { storedTreasuryAddress, getSessionStatus, type SessionStatus } from "../../../lib/passkeyTreasury";
+import {
+  storedTreasuryAddress,
+  getSessionStatus,
+  type SessionStatus,
+} from "../../../lib/passkeyTreasury";
 
 function avatarGradient(addr: string): string {
   const h = parseInt(addr.slice(2, 8), 16) % 360;
@@ -38,15 +42,19 @@ export default function AgentWorkspacePage() {
   const [session, setSession] = useState<SessionStatus | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/agents/${id}`, { cache: "no-store" });
-    if (res.status === 404) {
+    try {
+      const res = await fetch(`/api/agents/${id}`, { cache: "no-store" });
+      if (res.status === 404) {
+        setNotFound(true);
+        return;
+      }
+      const json = (await res.json()) as { agent?: ClientAgent };
+      setAgent(json.agent ?? null);
+    } catch {
       setNotFound(true);
+    } finally {
       setLoading(false);
-      return;
     }
-    const json = (await res.json()) as { agent?: ClientAgent };
-    setAgent(json.agent ?? null);
-    setLoading(false);
   }, [id]);
 
   useEffect(() => {
@@ -88,7 +96,9 @@ export default function AgentWorkspacePage() {
     return (
       <div className="ws ws--center">
         <div className="page__empty">
-          <span className="spin" aria-hidden>◠</span>
+          <span className="spin" aria-hidden>
+            ◠
+          </span>
           loading agent…
         </div>
       </div>
@@ -100,7 +110,9 @@ export default function AgentWorkspacePage() {
       <div className="ws ws--center">
         <div className="page__empty bw-card">
           <p>Agent not found.</p>
-          <Link href="/" className="btn-cta">Back to agents</Link>
+          <Link href="/" className="btn-cta">
+            Back to agents
+          </Link>
         </div>
       </div>
     );
@@ -121,13 +133,21 @@ export default function AgentWorkspacePage() {
           </Link>
 
           <div className="agside__id">
-            <span className="agside__avatar" style={{ background: avatarGradient(agent.address) }} aria-hidden />
+            <span
+              className="agside__avatar"
+              style={{ background: avatarGradient(agent.address) }}
+              aria-hidden
+            />
             <div className="agside__id-meta">
               <div className="agside__name-row">
                 <span className="agside__name">{agent.name}</span>
                 {agent.isDefault ? <span className="pill agside__badge">Default</span> : null}
               </div>
-              <button className="agside__addr mono" onClick={copyAddress} title="Copy agent address">
+              <button
+                className="agside__addr mono"
+                onClick={copyAddress}
+                title="Copy agent address"
+              >
                 <Icon name={copied ? "check" : "copy"} size={12} stroke={2} />
                 {shortAddress(agent.address)}
               </button>
@@ -141,12 +161,15 @@ export default function AgentWorkspacePage() {
                 <div className="agside__bal">
                   <span className="agside__bal-v">{remaining != null ? usdc(remaining) : "—"}</span>
                   <span className="agside__bal-l">
-                    {session?.granted ? "left in treasury budget" : "no spend budget — authorize it"}
+                    {session?.granted
+                      ? "left in treasury budget"
+                      : "no spend budget — authorize it"}
                   </span>
                 </div>
                 <p className="agside__fund-note">
-                  Pays from your passkey treasury <span className="mono">{shortAddress(treasuryAddr)}</span> via a
-                  session key — no per-agent wallet.
+                  Pays from your passkey treasury{" "}
+                  <span className="mono">{shortAddress(treasuryAddr)}</span> via a session key — no
+                  per-agent wallet.
                 </p>
                 <Link href="/" className="btn-outline agside__manage">
                   <Icon name="passkey" size={14} stroke={2} /> Manage treasury
@@ -155,8 +178,8 @@ export default function AgentWorkspacePage() {
             ) : (
               <>
                 <p className="agside__fund-note">
-                  No treasury yet. Create a passkey treasury on the home page, fund it once and authorize a budget —
-                  every agent pays from it.
+                  No treasury yet. Create a passkey treasury on the home page, fund it once and
+                  authorize a budget — every agent pays from it.
                 </p>
                 <Link href="/" className="btn-cta agside__manage">
                   <Icon name="passkey" size={14} stroke={2} /> Set up treasury
@@ -194,7 +217,8 @@ export default function AgentWorkspacePage() {
             <span className="agside__card-cap">Config</span>
             <div className="agside__chips">
               <span className="agside__chip">
-                <Icon name="clock" size={11} stroke={2} /> release after {formatDeadline(agent.deadlineSeconds)}
+                <Icon name="clock" size={11} stroke={2} /> release after{" "}
+                {formatDeadline(agent.deadlineSeconds)}
               </span>
               {agent.pluginIds.map((pid) => (
                 <span key={pid} className="agside__chip agside__chip--plugin mono">

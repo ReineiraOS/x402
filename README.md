@@ -24,27 +24,28 @@ confidential refund from an insurance pool — instead of the payer simply eatin
 
 This is a pnpm + Foundry monorepo.
 
-| Package | Stack | What it is |
-| --- | --- | --- |
-| `packages/rss` | Solidity (Foundry) | The standard: RSS interfaces and a conformance test suite proven against reference mocks |
-| `packages/contracts` | Solidity (Foundry) | Deployable implementations: `DeliveryDeadlineResolver`, `DeliveryPolicy`, and the `X402EscrowReceiver` funding source |
-| `packages/x402-rss` | TypeScript | The adapter SDK: x402 / EIP-3009 payment to RSS-conformant settlement |
-| `packages/facilitator` | TypeScript (Hono) | Standalone self-hosted x402 verify + settle server (Arbitrum Sepolia has no hosted facilitator) |
-| `packages/shared` | TypeScript | Shared types, addresses, x402 constants, ABIs |
-| `apps/demo` | Next.js 16 | The "Settlement Theater" demo: 3-zone UI, a 402 resource server, and a buyer agent client |
+| Package                | Stack              | What it is                                                                                                                                                               |
+| ---------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `packages/rss`         | Solidity (Foundry) | The standard: RSS interfaces and a conformance test suite proven against reference mocks                                                                                 |
+| `packages/contracts`   | Solidity (Foundry) | Deployable implementations: `DeliveryDeadlineResolver`, `DeliveryPolicy`, and the `X402EscrowReceiver` funding source                                                    |
+| `packages/core`        | TypeScript         | Our own x402 v2 `exact` (EIP-3009-only) implementation; the monorepo's facilitator + buyer adapter run on it, with `@x402/*` kept only as a dev differential-test oracle |
+| `packages/x402-rss`    | TypeScript         | The adapter SDK: x402 / EIP-3009 payment to RSS-conformant settlement                                                                                                    |
+| `packages/facilitator` | TypeScript (Hono)  | Standalone self-hosted x402 verify + settle server (Arbitrum Sepolia has no hosted facilitator)                                                                          |
+| `packages/shared`      | TypeScript         | Shared types, addresses, x402 constants, ABIs                                                                                                                            |
+| `apps/demo`            | Next.js 16         | The Payment-agents dashboard: autonomous buyer + seller agents settling on-chain x402 → escrow payments, with a Settlement Theater terminal                              |
 
 ## The standard (`packages/rss`)
 
-RSS is three interfaces and a conformance suite:
+RSS is three interfaces, two of which ship a semantic conformance suite:
 
-- `IConditionResolver` — decides whether an escrow's release condition is met (and what it has been breached against).
-- `IUnderwriterPolicy` — registers coverage, evaluates risk, and judges a claim.
-- `IFundingSource` — a pluggable funding entrypoint (x402, CCTP, fiat attestation, trusted claim).
+- `IConditionResolver` — decides whether an escrow's release condition is met (and what it has been breached against). **Conformance suite.**
+- `IUnderwriterPolicy` — registers coverage, evaluates risk, and judges a claim. **Conformance suite.**
+- `IFundingSource` — a pluggable funding entrypoint (x402, CCTP, fiat attestation, trusted claim). Interface-only; conformance suite is roadmap.
 
-The conformance suite asserts the *semantics* of these interfaces, not just their selectors. Any
-implementation can inherit the conformance harness to prove it behaves like the standard expects —
-the same harness is reused by `packages/contracts` to validate `DeliveryDeadlineResolver` and
-`DeliveryPolicy`.
+The conformance suites assert the _semantics_ of `IConditionResolver` and `IUnderwriterPolicy`, not
+just their selectors. Any implementation can inherit a conformance harness to prove it behaves like
+the standard expects — the same harness is reused by `packages/contracts` to validate
+`DeliveryDeadlineResolver` and `DeliveryPolicy`.
 
 ## Quickstart
 
@@ -65,11 +66,12 @@ in the Arbitrum Sepolia values before deploying.
 
 ## Demo
 
-`apps/demo` stages an agentic peer-to-peer deal: a buyer agent pays a provider agent via x402 for a
-deadline-bound batch job. Deliver in time and the deal releases; miss the deadline and a dispute
-auto-refunds the buyer from the coverage pool, confidentially. The UI shows three zones — buyer log,
-the Settlement Theater deal-card (countdown + progress grid), and provider log — with the on-chain
-settlement surfaced on Arbitrum Sepolia.
+`apps/demo` stages an agentic peer-to-peer deal: an autonomous buyer agent pays a seller agent via
+x402 for a deadline-bound resource. The settled resource is a **live on-chain data report** (current
+Arbitrum Sepolia block + gas + ETH/USD spot, fetched fresh at request time). Deliver in time and the
+deal releases; miss the deadline and a dispute auto-refunds the buyer from the coverage pool,
+confidentially. A Settlement Theater terminal surfaces each step, with the on-chain settlement on
+Arbitrum Sepolia.
 
 ```bash
 pnpm --filter @reineira-os/x402-rss-demo dev
@@ -80,10 +82,11 @@ pnpm --filter @reineira-os/x402-rss-demo dev
 This is a testnet demonstration of a mechanism, not a live service:
 
 - **Insurance pool is hollow.** The on-chain pool economics (premium split, claim discretion, real
-  LP capital) are not implemented. The demo proves the `dispute()` to `payClaim` *mechanism* works on
+  LP capital) are not implemented. The demo proves the `dispute()` to `payClaim` _mechanism_ works on
   testnet; it does not represent a working insurance product.
-- **Compute is mocked.** The "batch job" is a staged workload. This project is the settlement rail,
-  not a compute marketplace.
+- **The product is the rail, not a marketplace.** The paid resource is a real live on-chain data
+  report, but it is a stand-in for "some deliverable." This project is the settlement rail, not a
+  compute or data marketplace.
 - **No stats.** There are no usage, volume, or install figures here, real or implied.
 - **Built with** [Fhenix](https://www.fhenix.io) (confidential settlement via FHE) and
   [Arbitrum](https://arbitrum.io). Other tools are name-mentions, not endorsements.

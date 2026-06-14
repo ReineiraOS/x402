@@ -24,3 +24,6 @@ next-env.d.ts
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local review/orchestration harness (absolute paths; not part of the deliverable)
+tasks/review-workflow.js

@@ -19,7 +19,13 @@ function toAtomic(value: string): bigint {
   return BigInt(Math.round(n * 1e6));
 }
 
-export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onChange: () => void }) {
+export function TreasuryPanel({
+  agents,
+  onChange,
+}: {
+  agents: ClientAgent[];
+  onChange: () => void;
+}) {
   const [address, setAddress] = useState<`0x${string}` | null>(null);
   const [balance, setBalance] = useState<string>("0");
   const [session, setSession] = useState<SessionStatus | null>(null);
@@ -62,9 +68,15 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
         setAddress(addr);
         await loadBalance(addr);
         await refreshSession();
-        setNotice(mode === "register" ? "Treasury created — owned by your passkey ✓" : "Passkey treasury restored ✓");
+        setNotice(
+          mode === "register"
+            ? "Treasury created — owned by your passkey ✓"
+            : "Passkey treasury restored ✓",
+        );
       } catch (error) {
-        setNotice(`Passkey ${mode} failed: ${error instanceof Error ? error.message : String(error)}`);
+        setNotice(
+          `Passkey ${mode} failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
       } finally {
         setBusy(false);
       }
@@ -83,7 +95,9 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
     if (!address) return;
     void navigator.clipboard.writeText(address);
     window.open("https://faucet.circle.com", "_blank", "noopener");
-    setNotice("Treasury address copied · Circle faucet opened — send Arbitrum Sepolia USDC, then refresh.");
+    setNotice(
+      "Treasury address copied · Circle faucet opened — send Arbitrum Sepolia USDC, then refresh.",
+    );
   };
 
   const refresh = useCallback(async () => {
@@ -118,13 +132,27 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
       await refreshSession();
       onChange();
       setReauth(false);
-      setNotice("Spend budget authorized with passkey ✓ — agents can now pay autonomously within it.");
+      setNotice(
+        "Spend budget authorized with passkey ✓ — agents can now pay autonomously within it.",
+      );
     } catch (error) {
       setNotice(error instanceof Error ? error.message : String(error));
     } finally {
       setGranting(false);
     }
   };
+
+  const MAX_BUDGET = 100000;
+  const budgetAtomicInput = toAtomic(budgetInput);
+  const budgetError =
+    budgetInput.trim() === ""
+      ? null
+      : budgetAtomicInput <= 0n
+        ? "Enter a positive amount."
+        : Number(budgetInput) > MAX_BUDGET
+          ? `Maximum ${MAX_BUDGET.toLocaleString("en-US")} USDC.`
+          : null;
+  const budgetValid = budgetAtomicInput > 0n && !budgetError;
 
   if (!address) {
     return (
@@ -136,17 +164,25 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
           <div className="treasury__meta">
             <span className="treasury__cap">Treasury · master wallet</span>
             <span className="treasury__intro">
-              Create a passkey-owned smart wallet — you approve with your fingerprint, fund it once, and your
-              agents pay from it (within a budget you set). No per-agent wallets.
+              Create a passkey-owned smart wallet — you approve with your fingerprint, fund it once,
+              and your agents pay from it (within a budget you set). No per-agent wallets.
             </span>
           </div>
         </div>
         <div className="treasury__actions">
-          <button className="btn-cta treasury__btn" onClick={() => void create("register")} disabled={busy}>
+          <button
+            className="btn-cta treasury__btn"
+            onClick={() => void create("register")}
+            disabled={busy}
+          >
             <Icon name="fingerprint" size={15} stroke={2} />
             {busy ? "Waiting for passkey…" : "Create with passkey"}
           </button>
-          <button className="btn-outline treasury__btn" onClick={() => void create("login")} disabled={busy}>
+          <button
+            className="btn-outline treasury__btn"
+            onClick={() => void create("login")}
+            disabled={busy}
+          >
             Use existing
           </button>
         </div>
@@ -176,7 +212,10 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
         <span className="treasury__bal-v">{usdc(balance)}</span>
         <span className="treasury__bal-l">
           {session?.granted ? (
-            <>{usdc(remainingAtomic.toString())} left of {usdc(session.budgetAtomic ?? "0")} agent budget</>
+            <>
+              {usdc(remainingAtomic.toString())} left of {usdc(session.budgetAtomic ?? "0")} agent
+              budget
+            </>
           ) : (
             <>fund once · authorize a budget · agents pay from it</>
           )}
@@ -184,7 +223,11 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
       </div>
 
       <div className="treasury__actions">
-        <button className="treasury__reset" onClick={reset} title="Forget this passkey wallet on this device and create a new one">
+        <button
+          className="treasury__reset"
+          onClick={reset}
+          title="Forget this passkey wallet on this device and create a new one"
+        >
           Reset
         </button>
         <button
@@ -234,9 +277,9 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
                 <div className="grant">
                   <p className="grant__lead">
                     Authorize a <strong>spend budget</strong> with one passkey signature. Your{" "}
-                    {agents.length} agent{agents.length === 1 ? "" : "s"} can then pay for x402 resources{" "}
-                    <strong>autonomously from the treasury</strong>, up to this budget — no fingerprint per
-                    transaction, no per-agent wallets. Revoke or change anytime.
+                    {agents.length} agent{agents.length === 1 ? "" : "s"} can then pay for x402
+                    resources <strong>autonomously from the treasury</strong>, up to this budget —
+                    no fingerprint per transaction, no per-agent wallets. Revoke or change anytime.
                   </p>
                   <label className="grant__field">
                     <span className="grant__label">Spend budget</span>
@@ -244,21 +287,42 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
                       <input
                         type="number"
                         min={0}
-                        step="1"
+                        max={MAX_BUDGET}
+                        step="0.01"
+                        inputMode="decimal"
                         value={budgetInput}
                         onChange={(e) => setBudgetInput(e.target.value)}
                         placeholder="25"
+                        aria-invalid={!!budgetError}
                       />
                       <span>USDC</span>
                     </span>
+                    {budgetError ? (
+                      <span className="grant__error">
+                        <Icon name="alert" size={13} stroke={2} /> {budgetError}
+                      </span>
+                    ) : budgetValid && budgetAtomicInput > BigInt(balance) ? (
+                      <span className="grant__error" style={{ color: "var(--st-spec-text)" }}>
+                        <Icon name="alert" size={13} stroke={2} /> Above your treasury balance (
+                        {usdc(balance)}) — only what you hold is spendable.
+                      </span>
+                    ) : null}
                   </label>
                   <div className="grant__actions">
                     {session?.granted ? (
-                      <button className="dist__split" onClick={() => setReauth(false)} disabled={granting}>
+                      <button
+                        className="dist__split"
+                        onClick={() => setReauth(false)}
+                        disabled={granting}
+                      >
                         Cancel
                       </button>
                     ) : null}
-                    <button className="btn-cta" onClick={() => void doGrant()} disabled={granting || toAtomic(budgetInput) <= 0n}>
+                    <button
+                      className="btn-cta"
+                      onClick={() => void doGrant()}
+                      disabled={granting || !budgetValid}
+                    >
                       <Icon name="fingerprint" size={15} stroke={2} />
                       {granting ? "Approve in passkey…" : "Authorize with passkey"}
                     </button>
@@ -268,17 +332,21 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
                 <div className="grant">
                   <div className="grant__status">
                     <span>
-                      <b>{usdc(remainingAtomic.toString())}</b> left of {usdc(session?.budgetAtomic ?? "0")}
-                      <span className="grant__status-dim"> · {usdc(spentAtomic.toString())} spent</span>
+                      <b>{usdc(remainingAtomic.toString())}</b> left of{" "}
+                      {usdc(session?.budgetAtomic ?? "0")}
+                      <span className="grant__status-dim">
+                        {" "}
+                        · {usdc(spentAtomic.toString())} spent
+                      </span>
                     </span>
                     <button className="dist__split" onClick={() => setReauth(true)}>
                       Change budget
                     </button>
                   </div>
                   <p className="grant__lead">
-                    Your agents pay for x402 resources autonomously from the treasury within this budget — settled
-                    via the session key, gasless, no fingerprint per deal. When the budget runs low, re-authorize a
-                    larger one.
+                    Your agents pay for x402 resources autonomously from the treasury within this
+                    budget — settled via the session key, gasless, no fingerprint per deal. When the
+                    budget runs low, re-authorize a larger one.
                   </p>
                 </div>
               )}

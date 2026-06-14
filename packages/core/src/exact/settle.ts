@@ -1,8 +1,4 @@
-import {
-  getAddress,
-  parseSignature,
-  type Hex,
-} from "viem";
+import { getAddress, parseSignature, type Hex } from "viem";
 import { erc3009Abi, x402EscrowReceiverAbi } from "@reineira-os/x402-rss-shared";
 import type {
   ExactEvmAuthorization,
@@ -29,18 +25,14 @@ export type FacilitatorEvmSigner = {
     functionName: string;
     args: readonly unknown[];
   }): Promise<`0x${string}`>;
-  waitForTransactionReceipt(args: {
-    hash: `0x${string}`;
-  }): Promise<{ status: string }>;
+  waitForTransactionReceipt(args: { hash: `0x${string}` }): Promise<{ status: string }>;
 };
 
 type FacilitatorClientLike = Omit<FacilitatorEvmSigner, "getAddresses"> & {
   address: `0x${string}`;
 };
 
-export function toFacilitatorEvmSigner(
-  client: FacilitatorClientLike,
-): FacilitatorEvmSigner {
+export function toFacilitatorEvmSigner(client: FacilitatorClientLike): FacilitatorEvmSigner {
   return {
     ...client,
     getAddresses: () => [client.address],
@@ -112,22 +104,39 @@ export async function settleExact(
         ],
       });
     } else {
-      const { v, r, s } = splitSignature(exact.signature as Hex);
+      const signature = exact.signature as Hex;
+      // A 65-byte ECDSA sig (130 hex chars) uses the v/r/s overload; anything else is a
+      // contract-wallet (ERC-1271) signature that verifyExact accepted via isValidSignature,
+      // so route it to transferWithAuthorization's single-bytes overload instead of splitting.
+      const isEcdsa = signature.replace(/^0x/, "").length === 130;
       hash = await ctx.signer.writeContract({
         address: erc20Address,
         abi: erc3009Abi as readonly unknown[],
         functionName: "transferWithAuthorization",
-        args: [
-          getAddress(auth.from),
-          getAddress(auth.to),
-          BigInt(auth.value),
-          BigInt(auth.validAfter),
-          BigInt(auth.validBefore),
-          auth.nonce,
-          Number(v),
-          r,
-          s,
-        ],
+        args: isEcdsa
+          ? (() => {
+              const { v, r, s } = splitSignature(signature);
+              return [
+                getAddress(auth.from),
+                getAddress(auth.to),
+                BigInt(auth.value),
+                BigInt(auth.validAfter),
+                BigInt(auth.validBefore),
+                auth.nonce,
+                Number(v),
+                r,
+                s,
+              ];
+            })()
+          : [
+              getAddress(auth.from),
+              getAddress(auth.to),
+              BigInt(auth.value),
+              BigInt(auth.validAfter),
+              BigInt(auth.validBefore),
+              auth.nonce,
+              signature,
+            ],
       });
     }
 

@@ -1,8 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "../../ui/Icon";
-import { usdc, shortAddress, type ClientAgent, type SpendRecord, type TranscriptLine } from "./agentTypes";
+import {
+  usdc,
+  shortAddress,
+  type ClientAgent,
+  type SpendRecord,
+  type TranscriptLine,
+} from "./agentTypes";
 import { storedTreasuryAddress } from "../../lib/passkeyTreasury";
 
 type RunEvent = {
@@ -98,7 +104,12 @@ function renderTLine(line: TranscriptLine, i: number) {
         <span className="cl__text">
           {line.text}
           {line.tx ? (
-            <a className="cl__tx" href={`https://sepolia.arbiscan.io/tx/${line.tx}`} target="_blank" rel="noreferrer">
+            <a
+              className="cl__tx"
+              href={`https://sepolia.arbiscan.io/tx/${line.tx}`}
+              target="_blank"
+              rel="noreferrer"
+            >
               {" "}
               {line.tx.slice(0, 12)}… ↗
             </a>
@@ -114,7 +125,12 @@ function renderTLine(line: TranscriptLine, i: number) {
         {line.text}
         {line.detail ? <em className="cl__detail"> — {line.detail}</em> : null}
         {line.tx ? (
-          <a className="cl__tx" href={`https://sepolia.arbiscan.io/tx/${line.tx}`} target="_blank" rel="noreferrer">
+          <a
+            className="cl__tx"
+            href={`https://sepolia.arbiscan.io/tx/${line.tx}`}
+            target="_blank"
+            rel="noreferrer"
+          >
             {" "}
             {line.tx.slice(0, 12)}… ↗
           </a>
@@ -137,14 +153,30 @@ function PurchaseDetail({
   const left = typeof record.deadline === "number" ? Math.max(0, record.deadline - nowSec) : 0;
   const artifactJson = record.artifact ? JSON.stringify(record.artifact, null, 2) : null;
   const lines = record.transcript ?? [];
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
   return (
     <div className="pd-overlay" onClick={onClose} role="presentation">
-      <div className="pd bw-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal>
+      <div
+        className="pd bw-card"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal
+        aria-labelledby="pd-title"
+      >
         <div className="pd__bar">
           <div className="pd__title">
-            <span className="pd__name">{record.resourceName ?? record.description}</span>
+            <span className="pd__name" id="pd-title">
+              {record.resourceName ?? record.description}
+            </span>
             <span className="pd__sub mono">
-              {new Date(record.ts).toLocaleString()} · {record.escrowId ? `escrow #${record.escrowId}` : "direct"}
+              {new Date(record.ts).toLocaleString()} ·{" "}
+              {record.escrowId ? `escrow #${record.escrowId}` : "direct"}
             </span>
           </div>
           <button className="pd__close" onClick={onClose} aria-label="Close">
@@ -169,7 +201,12 @@ function PurchaseDetail({
               <span className="pd__fact-l">payment</span>
               <span className="pd__fact-v">
                 {record.tx ? (
-                  <a className="cl__tx" href={`https://sepolia.arbiscan.io/tx/${record.tx}`} target="_blank" rel="noreferrer">
+                  <a
+                    className="cl__tx"
+                    href={`https://sepolia.arbiscan.io/tx/${record.tx}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     {record.tx.slice(0, 12)}… ↗
                   </a>
                 ) : (
@@ -181,7 +218,12 @@ function PurchaseDetail({
               <span className="pd__fact-l">release</span>
               <span className="pd__fact-v">
                 {record.releaseTx ? (
-                  <a className="cl__tx" href={`https://sepolia.arbiscan.io/tx/${record.releaseTx}`} target="_blank" rel="noreferrer">
+                  <a
+                    className="cl__tx"
+                    href={`https://sepolia.arbiscan.io/tx/${record.releaseTx}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     {record.releaseTx.slice(0, 12)}… ↗
                   </a>
                 ) : (
@@ -200,7 +242,7 @@ function PurchaseDetail({
                     : record.coverage.status === "pending-setup"
                       ? "pending setup"
                       : "failed"}
-                  {record.coverage.claimTx ?? record.coverage.tx ? (
+                  {(record.coverage.claimTx ?? record.coverage.tx) ? (
                     <a
                       className="cl__tx"
                       href={`https://sepolia.arbiscan.io/tx/${record.coverage.claimTx ?? record.coverage.tx}`}
@@ -315,8 +357,11 @@ export function SettlementTheater({
     const t = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 1000);
     return () => clearInterval(t);
   }, []);
+  // Abort any in-flight run when the workspace unmounts so a navigated-away deal
+  // stops streaming (the server also honors request.signal to halt the work).
+  useEffect(() => () => abortRef.current?.abort(), []);
   useEffect(() => {
-    bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: "smooth" });
+    bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: "auto" });
   }, [session, status, tx]);
 
   const nextId = () => {
@@ -389,7 +434,11 @@ export function SettlementTheater({
         return;
       }
       if (event.kind === "deal") {
-        setDeal({ deal: event.deal ?? "—", price: event.price ?? "—", network: event.network ?? "—" });
+        setDeal({
+          deal: event.deal ?? "—",
+          price: event.price ?? "—",
+          network: event.network ?? "—",
+        });
         if (!payPushedRef.current) {
           payPushedRef.current = true;
           push({ kind: "payment" });
@@ -414,7 +463,8 @@ export function SettlementTheater({
         return;
       }
       if (event.zone === "buyer" && event.streamEnd) return endStream();
-      if (event.zone === "buyer" && event.stream) return stream(event.msg ?? "", event.final ?? false);
+      if (event.zone === "buyer" && event.stream)
+        return stream(event.msg ?? "", event.final ?? false);
 
       const msg = event.msg ?? "";
       if (event.zone === "buyer") {
@@ -461,7 +511,7 @@ export function SettlementTheater({
     setSession([]);
     push({
       kind: "cmd",
-      text: `settle --agent ${agent.name.toLowerCase().replace(/\s+/g, "-")} --resource "live on-chain report" --max 1.00 USDC`,
+      text: `settle --agent ${agent.name.toLowerCase().replace(/\s+/g, "-")} --resource ${resourceId || "live-report"} --max 1.00 USDC`,
     });
 
     try {
@@ -494,9 +544,19 @@ export function SettlementTheater({
       }
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") return;
-      push({ kind: "event", text: error instanceof Error ? error.message : String(error), error: true });
+      push({
+        kind: "event",
+        text: error instanceof Error ? error.message : String(error),
+        error: true,
+      });
       setStatus("failed");
+    } finally {
+      // Always clear the run lock — even when the SSE stream ends without a terminal
+      // done/error frame (server crash, dropped connection, hot-reload mid-stream) — so
+      // the Run button never gets stuck disabled. If we never reached a terminal status,
+      // surface the truncation as a failure rather than leaving it mid-flight.
       setRunning(false);
+      setStatus((s) => (s === "settled" || s === "failed" ? s : "failed"));
     }
   }, [running, handleEvent, push, agent.id, agent.name, resourceId, forceDecline]);
 
@@ -518,7 +578,7 @@ export function SettlementTheater({
       setNotice(
         json.secondsRemaining
           ? `escrow #${eid}: timelock active — ${json.secondsRemaining}s remaining`
-          : json.detail ?? json.error ?? `release failed (${res.status})`,
+          : (json.detail ?? json.error ?? `release failed (${res.status})`),
       );
       return false;
     }
@@ -599,7 +659,9 @@ export function SettlementTheater({
   const claimable = breach && !currentCoverage?.claimed;
   const claimedCov = breach && !!currentCoverage?.claimed;
   const paying = running && !funded;
-  const pct = locked ? Math.max(4, Math.min(100, (secondsLeft / Math.max(1, agent.deadlineSeconds)) * 100)) : 100;
+  const pct = locked
+    ? Math.max(4, Math.min(100, (secondsLeft / Math.max(1, agent.deadlineSeconds)) * 100))
+    : 100;
   const escrowState = released
     ? "released"
     : breach
@@ -612,9 +674,92 @@ export function SettlementTheater({
             ? "funded"
             : "empty";
   const selectedResource = resources.find((r) => r.id === resourceId);
-  const escrowAmt = funded ? (deal?.price ?? "—") : selectedResource ? usdc(selectedResource.priceAtomic) : "—";
+  const escrowAmt = funded
+    ? (deal?.price ?? "—")
+    : selectedResource
+      ? usdc(selectedResource.priceAtomic)
+      : "—";
 
-  const phaseIdx = status === "settled" ? 4 : status === "settling" ? 3 : status === "signing" ? 2 : deal ? 1 : 0;
+  // ── Granular deal pipeline: the full x402 → escrow → delivery → settle lifecycle as
+  // discrete, state-aware steps (clearer than the old 3-node pipe). Each step reads its
+  // state off the live run; the coverage step only appears for an insured deal.
+  const hasCoverage = !!currentCoverage || agent.pluginIds.includes("delivery-coverage-policy");
+  type FlowState = "pending" | "active" | "done" | "breach";
+  const flowStages: { key: string; icon: string; label: string; sub: string; state: FlowState }[] =
+    [
+      {
+        key: "request",
+        icon: "bolt",
+        label: "Request",
+        sub: deal ? "402 challenge" : paying ? "asking…" : "x402 GET",
+        state: deal || funded ? "done" : paying ? "active" : "pending",
+      },
+      {
+        key: "authorize",
+        icon: "passkey",
+        label: "Authorize",
+        sub: "EIP-3009 sign",
+        state: funded ? "done" : status === "signing" ? "active" : "pending",
+      },
+      {
+        key: "escrow",
+        icon: "lock",
+        label: escrowId ? `Escrow #${escrowId}` : "Escrow",
+        sub: funded ? `${escrowAmt} held` : escrowAmt,
+        state: funded ? "done" : status === "settling" ? "active" : "pending",
+      },
+      ...(hasCoverage
+        ? [
+            {
+              key: "coverage",
+              icon: "umbrella",
+              label: "Coverage",
+              sub:
+                currentCoverage?.status === "active"
+                  ? `insured #${currentCoverage.coverageId}`
+                  : currentCoverage?.status === "pending-setup"
+                    ? "pending setup"
+                    : "underwriter pool",
+              state: (currentCoverage?.status === "active"
+                ? "done"
+                : funded
+                  ? "active"
+                  : "pending") as FlowState,
+            },
+          ]
+        : []),
+      {
+        key: "delivery",
+        icon: "feed",
+        label: "Data Desk",
+        sub: released
+          ? "delivered ✓"
+          : breach
+            ? "not delivered"
+            : running && funded
+              ? "reasoning…"
+              : "seller agent",
+        state: released ? "done" : breach ? "breach" : running && funded ? "active" : "pending",
+      },
+      {
+        key: "outcome",
+        icon: released ? "check" : breach ? "umbrella" : "check",
+        label: breach ? "Claim" : "Settled",
+        sub: released
+          ? "paid to seller"
+          : claimedCov
+            ? `refunded ${usdc(currentCoverage?.claimPayoutAtomic ?? "0")}`
+            : claimable
+              ? "refund ready"
+              : funded
+                ? "awaiting"
+                : "—",
+        state: released || claimedCov ? "done" : claimable || breach ? "breach" : "pending",
+      },
+    ];
+
+  const phaseIdx =
+    status === "settled" ? 4 : status === "settling" ? 3 : status === "signing" ? 2 : deal ? 1 : 0;
   const paySteps = [
     { label: "402 — payment required", sub: deal?.price ? `provider asks ${deal.price}` : "" },
     { label: "authorization signed", sub: "EIP-3009 · ERC-1271" },
@@ -626,8 +771,15 @@ export function SettlementTheater({
   const purchases = [...agent.ledger].reverse();
   const totalSpent = agent.ledger.reduce((sum, r) => sum + BigInt(r.amountAtomic), 0n);
   const stateOf = (r: SpendRecord) => purchaseState(r, nowSec);
+  // A covered escrow that is past its deadline (releasable) is a delivery BREACH: the
+  // seller can no longer redeem (release reverts), so the buyer files a claim instead.
+  // Such records must be excluded from every "Release" affordance.
+  const isBreachedRecord = (r: SpendRecord) =>
+    stateOf(r) === "releasable" && r.coverage?.status === "active";
   const heldCount = agent.ledger.filter((r) => stateOf(r) === "held").length;
-  const releasableRecords = agent.ledger.filter((r) => stateOf(r) === "releasable");
+  const releasableRecords = agent.ledger.filter(
+    (r) => stateOf(r) === "releasable" && !isBreachedRecord(r),
+  );
   const releasableIds = Array.from(
     new Set(releasableRecords.map((r) => r.escrowId).filter((x): x is string => !!x)),
   );
@@ -683,17 +835,31 @@ export function SettlementTheater({
             <Icon name="terminal" size={11} stroke={2} /> Audit log
           </button>
           {r.tx ? (
-            <a className="purch__tx" href={`https://sepolia.arbiscan.io/tx/${r.tx}`} target="_blank" rel="noreferrer">
+            <a
+              className="purch__tx"
+              href={`https://sepolia.arbiscan.io/tx/${r.tx}`}
+              target="_blank"
+              rel="noreferrer"
+            >
               pay tx {r.tx.slice(0, 8)}… ↗
             </a>
           ) : null}
           {st === "released" && r.releaseTx ? (
-            <a className="purch__tx" href={`https://sepolia.arbiscan.io/tx/${r.releaseTx}`} target="_blank" rel="noreferrer">
+            <a
+              className="purch__tx"
+              href={`https://sepolia.arbiscan.io/tx/${r.releaseTx}`}
+              target="_blank"
+              rel="noreferrer"
+            >
               release tx {r.releaseTx.slice(0, 8)}… ↗
             </a>
           ) : null}
-          {st === "releasable" && eid ? (
-            <button className="purch__release" onClick={() => void releasePurchase(eid)} disabled={busy}>
+          {st === "releasable" && eid && !isBreachedRecord(r) ? (
+            <button
+              className="purch__release"
+              onClick={() => void releasePurchase(eid)}
+              disabled={busy}
+            >
               {busy ? "Releasing…" : "Release →"}
             </button>
           ) : null}
@@ -713,7 +879,11 @@ export function SettlementTheater({
             </span>
           ) : null}
           {r.coverage?.status === "active" && !r.coverage.claimed && st === "releasable" && eid ? (
-            <button className="purch__claim" onClick={() => void claimPurchase(eid)} disabled={busy}>
+            <button
+              className="purch__claim"
+              onClick={() => void claimPurchase(eid)}
+              disabled={busy}
+            >
               {busy ? "Filing…" : "File claim →"}
             </button>
           ) : null}
@@ -737,7 +907,11 @@ export function SettlementTheater({
           <span className="cl__gutter">//</span>
           <span className="cl__text">
             {stripMd(line.text ?? "")}
-            {line.streaming ? <span className="cl__cursor" aria-hidden>▍</span> : null}
+            {line.streaming ? (
+              <span className="cl__cursor" aria-hidden>
+                ▍
+              </span>
+            ) : null}
           </span>
         </div>
       );
@@ -748,7 +922,11 @@ export function SettlementTheater({
           <span className="cl__tag">✓ market read</span>
           <span className="cl__text">
             {stripMd(line.text ?? "")}
-            {line.streaming ? <span className="cl__cursor" aria-hidden>▍</span> : null}
+            {line.streaming ? (
+              <span className="cl__cursor" aria-hidden>
+                ▍
+              </span>
+            ) : null}
           </span>
         </div>
       );
@@ -767,7 +945,11 @@ export function SettlementTheater({
           <span className="cl__seller-tag">⊙ seller</span>
           <span className="cl__text">
             {stripMd(line.text ?? "")}
-            {line.streaming ? <span className="cl__cursor" aria-hidden>▍</span> : null}
+            {line.streaming ? (
+              <span className="cl__cursor" aria-hidden>
+                ▍
+              </span>
+            ) : null}
             {line.tx ? (
               <a
                 className="cl__tx"
@@ -791,7 +973,9 @@ export function SettlementTheater({
               <Icon name="bolt" size={20} stroke={2.2} />
             </span>
             <span className="pay__title">x402 payment</span>
-            <span className={`pay__status pay__status--${status === "settled" ? "ok" : status === "failed" ? "err" : "run"}`}>
+            <span
+              className={`pay__status pay__status--${status === "settled" ? "ok" : status === "failed" ? "err" : "run"}`}
+            >
               {STATUS_LABEL[status]}
             </span>
           </div>
@@ -819,13 +1003,26 @@ export function SettlementTheater({
               return (
                 <li key={step.label} className={`pay__step pay__step--${state}`}>
                   <span className="pay__mark">
-                    {done ? "✓" : active ? <span className="spin" aria-hidden>◠</span> : "·"}
+                    {done ? (
+                      "✓"
+                    ) : active ? (
+                      <span className="spin" aria-hidden>
+                        ◠
+                      </span>
+                    ) : (
+                      "·"
+                    )}
                   </span>
                   <span className="pay__step-label">
                     {step.label}
                     {step.sub ? <em> · {step.sub}</em> : null}
                     {i === 3 && tx ? (
-                      <a className="cl__tx" href={arbiscan ?? `https://sepolia.arbiscan.io/tx/${tx}`} target="_blank" rel="noreferrer">
+                      <a
+                        className="cl__tx"
+                        href={arbiscan ?? `https://sepolia.arbiscan.io/tx/${tx}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         {" "}
                         {tx.slice(0, 12)}… ↗
                       </a>
@@ -845,7 +1042,12 @@ export function SettlementTheater({
         <span className="cl__text">
           {line.text}
           {line.tx ? (
-            <a className="cl__tx" href={line.arbiscan ?? `https://sepolia.arbiscan.io/tx/${line.tx}`} target="_blank" rel="noreferrer">
+            <a
+              className="cl__tx"
+              href={line.arbiscan ?? `https://sepolia.arbiscan.io/tx/${line.tx}`}
+              target="_blank"
+              rel="noreferrer"
+            >
               {" "}
               {line.tx.slice(0, 12)}… ↗
             </a>
@@ -857,80 +1059,72 @@ export function SettlementTheater({
 
   return (
     <div className="cns">
-      {/* compact settlement pipe */}
-      <div className="pipe bw-card">
-        <div className="pipe__zone">
-          <div className="pipe__node">
-            <span className={`pipe__chip${paying ? " pipe__chip--active" : ""}`}>
-              <Icon name="bolt" size={15} stroke={2} />
-            </span>
-            <div className="pipe__node-meta">
-              <span className="pipe__node-name">{agent.name}</span>
-              <span className="pipe__node-sub">via passkey treasury</span>
-            </div>
-          </div>
-          <span
-            className={`pipe__arrow${paying ? " pipe__arrow--active" : ""}${funded ? " pipe__arrow--done" : ""}`}
-            aria-hidden
-          >
-            <span className="pipe__spark" />
-          </span>
+      {/* granular deal pipeline */}
+      <div className="flow bw-card">
+        <div className="flow__steps">
+          {flowStages.map((s, i) => (
+            <Fragment key={s.key}>
+              {i > 0 ? (
+                <span
+                  className={`flow__link${flowStages[i - 1].state === "done" ? " flow__link--on" : ""}`}
+                  aria-hidden
+                />
+              ) : null}
+              <div className={`flow__step flow__step--${s.state}`}>
+                <span className="flow__chip">
+                  <Icon name={s.icon} size={15} stroke={2} />
+                </span>
+                <span className="flow__label">{s.label}</span>
+                <span className="flow__sub">{s.sub}</span>
+              </div>
+            </Fragment>
+          ))}
         </div>
 
-        <div className={`pipe__escrow pipe__escrow--${escrowState}`}>
-          <span className="pipe__escrow-icon">
-            <Icon name={released ? "check" : breach ? "shield" : "lock"} size={16} stroke={2} />
-          </span>
-          <div className="pipe__escrow-meta">
-            <span className="pipe__escrow-id mono">{escrowId ? `Escrow #${escrowId}` : "Escrow"}</span>
-            <span className={`pipe__escrow-amt${funded ? "" : " pipe__escrow-amt--pending"}`}>{escrowAmt}</span>
-          </div>
+        <div className="flow__status">
           {locked ? (
-            <div className="pipe__time">
-              <span className="pipe__time-s mono">seller redeems · {secondsLeft}s</span>
-              <span className="pipe__timebar"><span style={{ width: `${pct}%` }} /></span>
+            <div className="flow__count">
+              <Icon name="clock" size={13} stroke={2} />
+              <span className="mono">seller redeems in {secondsLeft}s</span>
+              <span className="flow__bar" aria-hidden>
+                <span style={{ width: `${pct}%` }} />
+              </span>
             </div>
           ) : claimable ? (
             <button
-              className="pipe__claim"
+              className="flow__claim"
               onClick={() => escrowId && void claimPurchase(escrowId)}
               disabled={busyEscrow === escrowId}
             >
-              {busyEscrow === escrowId ? "Filing…" : "File claim →"}
+              <Icon name="umbrella" size={13} stroke={2} />
+              {busyEscrow === escrowId ? "Filing claim…" : "File insurance claim →"}
             </button>
           ) : claimedCov ? (
-            <span className="pipe__escrow-hint pipe__escrow-hint--claim">
-              claimed · {usdc(currentCoverage?.claimPayoutAtomic ?? "0")}
+            <span className="flow__msg flow__msg--ok">
+              ✓ claim paid · {usdc(currentCoverage?.claimPayoutAtomic ?? "0")} refunded to the
+              treasury
+            </span>
+          ) : released ? (
+            <span className="flow__msg flow__msg--ok">
+              ✓ settled · payment released to the seller
             </span>
           ) : unlockable ? (
-            <span className="pipe__escrow-hint pipe__escrow-hint--claim">not delivered</span>
-          ) : funded || released ? (
-            <span className="pipe__escrow-hint">{released ? "released" : "held"}</span>
-          ) : null}
-        </div>
-
-        <div className="pipe__zone pipe__zone--right">
-          <span
-            className={`pipe__arrow${running && funded && !released ? " pipe__arrow--active" : ""}${released ? " pipe__arrow--done" : ""}`}
-            aria-hidden
-          >
-            <span className="pipe__spark" />
-          </span>
-          <div className="pipe__node">
-            <span
-              className={`pipe__chip pipe__chip--seller${
-                released ? " pipe__chip--active" : running && funded ? " pipe__chip--thinking" : ""
-              }`}
-            >
-              <Icon name="feed" size={15} stroke={2} />
+            <span className="flow__msg flow__msg--warn">
+              seller did not deliver before the deadline — escrow held
             </span>
-            <div className="pipe__node-meta">
-              <span className="pipe__node-name">Data Desk</span>
-              <span className="pipe__node-sub">
-                {released ? "delivered ✓" : running && funded ? "reasoning…" : "seller agent"}
-              </span>
-            </div>
-          </div>
+          ) : funded ? (
+            <span className="flow__msg flow__msg--muted">
+              funds settled into escrow · the seller is preparing delivery
+            </span>
+          ) : paying ? (
+            <span className="flow__msg flow__msg--muted">
+              settling the x402 payment on Arbitrum…
+            </span>
+          ) : (
+            <span className="flow__msg flow__msg--muted">
+              pick a resource and run the deal — every step settles on-chain
+            </span>
+          )}
         </div>
       </div>
 
@@ -938,24 +1132,40 @@ export function SettlementTheater({
       <div className="term bw-card">
         <div className="term__bar">
           <div className="term__title">
-            <span className="term__dots" aria-hidden><i /><i /><i /></span>
+            <span className="term__dots" aria-hidden>
+              <i />
+              <i />
+              <i />
+            </span>
             <span className="term__path mono">
               {agent.name.toLowerCase().replace(/\s+/g, "-")}@reineira
               <span className="term__path-dim"> · settlement session</span>
             </span>
           </div>
           <div className="term__tabs">
-            <button className={`term__tab${tab === "console" ? " term__tab--active" : ""}`} onClick={() => setTab("console")}>
+            <button
+              className={`term__tab${tab === "console" ? " term__tab--active" : ""}`}
+              onClick={() => setTab("console")}
+            >
               Console
             </button>
-            <button className={`term__tab${tab === "purchases" ? " term__tab--active" : ""}`} onClick={() => setTab("purchases")}>
+            <button
+              className={`term__tab${tab === "purchases" ? " term__tab--active" : ""}`}
+              onClick={() => setTab("purchases")}
+            >
               Purchases · {agent.ledger.length}
             </button>
           </div>
         </div>
 
         {tab === "console" ? (
-          <div className="term__body thin-scroll" ref={bodyRef}>
+          <div
+            className="term__body thin-scroll"
+            ref={bodyRef}
+            role="log"
+            aria-live="polite"
+            aria-atomic="false"
+          >
             {session.length === 0 ? (
               <div className="term__empty mono">
                 <span className="cl__caret">❯</span> awaiting run — pick a resource below and hit{" "}
@@ -965,8 +1175,11 @@ export function SettlementTheater({
               <div className="term__lines">{session.map(renderLine)}</div>
             )}
             {running ? (
-              <div className="term__running-line mono">
-                <span className="spin" aria-hidden>◠</span> {status}…
+              <div className="term__running-line mono" role="status">
+                <span className="spin" aria-hidden>
+                  ◠
+                </span>{" "}
+                {status}…
               </div>
             ) : null}
             {notice ? <div className="term__notice">{notice}</div> : null}
@@ -977,14 +1190,20 @@ export function SettlementTheater({
               <div className="purch-empty">
                 <Icon name="feed" size={22} stroke={1.5} />
                 <p>No purchases yet.</p>
-                <span className="agents__muted">Run a deal — every resource the agent buys lands here with its data and escrow status.</span>
+                <span className="agents__muted">
+                  Run a deal — every resource the agent buys lands here with its data and escrow
+                  status.
+                </span>
               </div>
             ) : (
               <>
                 <div className="purch-tools">
                   <span className="purch-tools__sum">
-                    <strong>{agent.ledger.length}</strong> purchases · <strong>{usdc(totalSpent.toString())}</strong> spent
-                    {heldCount > 0 ? <span className="purch-tools__held"> · {heldCount} held</span> : null}
+                    <strong>{agent.ledger.length}</strong> purchases ·{" "}
+                    <strong>{usdc(totalSpent.toString())}</strong> spent
+                    {heldCount > 0 ? (
+                      <span className="purch-tools__held"> · {heldCount} held</span>
+                    ) : null}
                   </span>
                   {releasableIds.length > 0 ? (
                     <button
@@ -992,7 +1211,9 @@ export function SettlementTheater({
                       onClick={() => void releaseAllEligible(releasableIds)}
                       disabled={batchReleasing || !!busyEscrow}
                     >
-                      {batchReleasing ? "Releasing…" : `Release all eligible (${releasableIds.length})`}
+                      {batchReleasing
+                        ? "Releasing…"
+                        : `Release all eligible (${releasableIds.length})`}
                     </button>
                   ) : null}
                 </div>
@@ -1004,7 +1225,9 @@ export function SettlementTheater({
                       <div key={b.name} className="purch-bar">
                         <span className="purch-bar__l">{b.name}</span>
                         <span className="purch-bar__track">
-                          <span style={{ width: `${Number((b.amount * 100n) / maxResourceAmt)}%` }} />
+                          <span
+                            style={{ width: `${Number((b.amount * 100n) / maxResourceAmt)}%` }}
+                          />
                         </span>
                         <span className="purch-bar__v mono">
                           {usdc(b.amount.toString())} · {b.count}×
@@ -1052,7 +1275,10 @@ export function SettlementTheater({
             <button className="term__run" onClick={() => void runDeal()} disabled={running}>
               {running ? (
                 <>
-                  <span className="spin" aria-hidden>◠</span> Running…
+                  <span className="spin" aria-hidden>
+                    ◠
+                  </span>{" "}
+                  Running…
                 </>
               ) : (
                 <>
@@ -1064,7 +1290,9 @@ export function SettlementTheater({
         ) : null}
       </div>
 
-      {detail ? <PurchaseDetail record={detail} nowSec={nowSec} onClose={() => setDetail(null)} /> : null}
+      {detail ? (
+        <PurchaseDetail record={detail} nowSec={nowSec} onClose={() => setDetail(null)} />
+      ) : null}
     </div>
   );
 }

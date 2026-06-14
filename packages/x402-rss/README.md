@@ -1,7 +1,7 @@
 # @reineira-os/x402-rss
 
-MIT buyer-side x402 adapter for Arbitrum Sepolia. A thin wrapper over Coinbase's
-x402 v2 client (`@x402/fetch` + `@x402/evm`) preconfigured for the `eip155:421614`
+MIT buyer-side x402 adapter for Arbitrum Sepolia. A thin wrapper over our own
+`@reineira-os/x402-core` `exact` client, preconfigured for the `eip155:421614`
 `exact` (EIP-3009) scheme and the Arbitrum Sepolia USDC.
 
 ## Usage
@@ -19,5 +19,6 @@ const res = await fetchPaid("https://provider.example/job");
 `PAYMENT-SIGNATURE` header. A `maxValue` cap (default 10 USDC) rejects a payment
 that exceeds the limit before signing.
 
-Reuses the x402 v2 client; the demo settles via `transferWithAuthorization`.
-`receiveWithAuthorization` hardening is deferred to A3 (contract-side).
+Built on `@reineira-os/x402-core`. Plain pays settle via
+`transferWithAuthorization`; escrow-bound pays settle via
+`receiveWithAuthorization` (both implemented in core).

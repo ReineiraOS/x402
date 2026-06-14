@@ -15,8 +15,8 @@ contract X402EscrowReceiver is IFundingSource {
         escrow = IEscrow(escrow_);
     }
 
-    // Scaffold stub — settle() implemented in A3 (DEV-191): pull USDC via
-    // receiveWithAuthorization, then escrow.fund(escrowId, abi.encode(amount)).
+    // settle() not yet implemented: pull USDC via receiveWithAuthorization,
+    // then escrow.fund(escrowId, amount).
     function settle(uint256, bytes calldata) external pure override returns (uint256) {
         revert NotImplemented();
     }

@@ -1,7 +1,7 @@
 /**
  * Standalone on-chain proof of the Two-Key Halt mechanic on Arbitrum Sepolia.
  * Proves the NEW, previously-unproven surface end-to-end with three distinct keys:
- *   bond create (backend) -> bond fund (Sentinel) -> Guardian pause -> staged demoDrain ->
+ *   bond create (backend) -> bond fund (Sentinel) -> staged demoDrain -> Guardian pause ->
  *   AlertResolver verdict flips false->true -> Sentinel redeems the bond back.
  * Run: tsx scripts/twokey-proof.ts   (env vars supplied by the caller)
  */
@@ -121,15 +121,15 @@ async function main() {
   console.log(`  bond funded ${Number(BOND) / 1e6} USDC — tx ${funded.hash}`);
   assert(((await pub.readContract({ address: ESCROW, abi: escrowAbi, functionName: "getPaidAmount", args: [escrowId] })) as bigint) >= BOND, "bond fully funded on-chain");
 
-  console.log("\nSTEP 2 — Guardian (distinct key) pauses the vault");
-  const paused = await send(guardian, { address: VAULT, abi: vaultAbi, functionName: "pause", args: [] });
-  console.log(`  vault paused — tx ${paused.hash}`);
-  assert(await pub.readContract({ address: VAULT, abi: vaultAbi, functionName: "paused" }), "vault PAUSED · funds safe");
-
-  console.log("\nSTEP 3 — staged attacker drains the vault below its floor (one real on-chain write)");
+  console.log("\nSTEP 2 — staged attacker drains the vault below its floor (one real on-chain write)");
   const drained = await send(backend, { address: VAULT, abi: vaultAbi, functionName: "demoDrain", args: [DRAIN] });
   console.log(`  demoDrain — tx ${drained.hash}`);
   assert(!(await pub.readContract({ address: VAULT, abi: vaultAbi, functionName: "isHealthy" })), "vault invariant broken (totalAssets < floor)");
+
+  console.log("\nSTEP 3 — Guardian (distinct key) pauses the vault, freezing further damage");
+  const paused = await send(guardian, { address: VAULT, abi: vaultAbi, functionName: "pause", args: [] });
+  console.log(`  vault paused — tx ${paused.hash}`);
+  assert(await pub.readContract({ address: VAULT, abi: vaultAbi, functionName: "paused" }), "vault PAUSED · funds safe");
 
   console.log("\nSTEP 4 — trustless verdict: AlertResolver reads the real breached flag");
   assert(await pub.readContract({ address: RESOLVER, abi: resolverAbi, functionName: "isBreached", args: [escrowId] }), "AlertResolver.isBreached == true (VALID)");

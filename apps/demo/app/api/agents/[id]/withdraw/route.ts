@@ -5,10 +5,7 @@ import { createAgentWallet } from "../../../../../lib/agentWallet";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const agent = await getAgent(id);
   if (!agent) {
@@ -32,10 +29,20 @@ export async function POST(
     );
   }
 
+  let amount: bigint | undefined;
+  if (body.amountAtomic !== undefined) {
+    if (!/^\d+$/.test(body.amountAtomic) || BigInt(body.amountAtomic) <= 0n) {
+      return NextResponse.json(
+        { error: "`amountAtomic` must be a positive integer string" },
+        { status: 400 },
+      );
+    }
+    amount = BigInt(body.amountAtomic);
+  }
+
   try {
     const wallet = await createAgentWallet(agent.ownerPrivateKey);
     await wallet.deployIfNeeded();
-    const amount = body.amountAtomic ? BigInt(body.amountAtomic) : undefined;
     const { txHash, amount: swept } = await wallet.sweepUsdc(to, amount);
     return NextResponse.json({
       txHash,

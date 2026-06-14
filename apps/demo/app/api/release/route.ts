@@ -33,7 +33,12 @@ export async function POST(request: Request) {
     chain: arbitrumSepolia,
     transport: http(config.rpcUrl),
   });
-  const now = BigInt(Math.floor(Date.now() / 1000));
+  // Deadlines are created from max(wall-clock, block.timestamp) (sellerEscrow.ts) because
+  // Arbitrum Sepolia's block clock can lead wall-clock; gate against the same clock the
+  // on-chain resolver enforces so the breach/timelock boundary can't mis-fire.
+  const wall = BigInt(Math.floor(Date.now() / 1000));
+  const block = await publicClient.getBlock({ blockTag: "latest" });
+  const now = block.timestamp > wall ? block.timestamp : wall;
 
   const resolver = getAddress(
     (await publicClient.readContract({
@@ -139,10 +144,7 @@ export async function POST(request: Request) {
     const txHash = await walletClient.writeContract(txRequest);
     const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
     if (receipt.status !== "success") {
-      return NextResponse.json(
-        { error: "release reverted", txHash },
-        { status: 502 },
-      );
+      return NextResponse.json({ error: "release reverted", txHash }, { status: 502 });
     }
     await markSpendReleased(body.escrowId, txHash);
     return NextResponse.json({

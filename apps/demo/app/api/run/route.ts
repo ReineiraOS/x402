@@ -142,6 +142,10 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const MODEL = "claude-haiku-4-5-20251001";
 
+// Hard cap on agent reasoning turns — the load-bearing safety bound on a run
+// (one buy per run is enforced separately by the idempotency guard below).
+const MAX_AGENT_TURNS = 4;
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -455,7 +459,11 @@ async function runX402Payment(
         emit({ zone: "system", level: "error", msg: cov.note ?? "coverage attach failed" });
       }
     } catch (covErr) {
-      emit({ zone: "system", level: "error", msg: `coverage attach error: ${errorMessage(covErr)}` });
+      emit({
+        zone: "system",
+        level: "error",
+        msg: `coverage attach error: ${errorMessage(covErr)}`,
+      });
     }
     await sleep(STEP_MS);
   }
@@ -572,6 +580,7 @@ function buildSystemPrompt(
 
 export async function GET(request: Request) {
   const encoder = new TextEncoder();
+  const signal = request.signal;
   const resource = resourceUrl(request);
   const url = new URL(request.url);
   const resourceDef = getResource(url.searchParams.get("resourceId"));
@@ -598,19 +607,40 @@ export async function GET(request: Request) {
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      let aborted = signal.aborted;
+      const onAbort = () => {
+        aborted = true;
+      };
+      signal.addEventListener("abort", onAbort);
       const transcript = makeTranscript();
       const emit: Emit = (event) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        if (aborted) return;
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        } catch {
+          // Client disconnected: stop trying to write so the run can wind down quietly.
+          aborted = true;
+          return;
+        }
         transcript.capture(event);
       };
       const recorded: string[] = [];
-      const finishRun = async () => {
+      // Persist the captured reasoning to each spend so the Audit log survives even an
+      // error/abort path (without it a real run can land in the ledger with an empty log).
+      const persistTranscript = async () => {
         transcript.flush();
         if (agent && recorded.length) {
           for (const ts of recorded) {
-            await updateSpendTranscript(agent.id, ts, transcript.lines);
+            try {
+              await updateSpendTranscript(agent.id, ts, transcript.lines);
+            } catch {
+              /* best-effort */
+            }
           }
         }
+      };
+      const finishRun = async () => {
+        await persistTranscript();
         emit({ done: true });
       };
 
@@ -680,20 +710,27 @@ export async function GET(request: Request) {
         ];
 
         let paid = false;
+        let boughtReport: LiveReport | null = null;
+        let boughtDelivered = false;
 
         // Agent loop: stream reasoning to the Buyer zone, run the real x402 payment
         // when the model calls the tool, feed the real artifact back, then stream the
         // model's final grounded answer. Capped to keep the demo bounded.
-        for (let turn = 0; turn < 4; turn += 1) {
+        for (let turn = 0; turn < MAX_AGENT_TURNS; turn += 1) {
+          // Client gone: stop reasoning so an abandoned run doesn't keep spending.
+          if (aborted || signal.aborted) break;
           const isFinalTurn = paid;
 
-          const modelStream = anthropic.messages.stream({
-            model: MODEL,
-            max_tokens: 600,
-            system: buildSystemPrompt(agent, resourceDef, remainingBudgetUsdc),
-            tools: [FETCH_LIVE_REPORT_TOOL],
-            messages,
-          });
+          const modelStream = anthropic.messages.stream(
+            {
+              model: MODEL,
+              max_tokens: 600,
+              system: buildSystemPrompt(agent, resourceDef, remainingBudgetUsdc),
+              tools: [FETCH_LIVE_REPORT_TOOL],
+              messages,
+            },
+            { signal },
+          );
 
           let textBuffer = "";
           modelStream.on("text", (delta) => {
@@ -736,7 +773,28 @@ export async function GET(request: Request) {
               continue;
             }
 
-            emit({ zone: "buyer", msg: "Decides to buy the live report — initiating x402 payment" });
+            // Idempotency: one real on-chain payment per run. If the model re-calls the
+            // tool, hand back the data it already bought instead of charging again.
+            if (paid) {
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: JSON.stringify(
+                  boughtDelivered
+                    ? { status: "already_purchased", report: boughtReport }
+                    : {
+                        status: "not_delivered",
+                        note: "You already initiated this purchase; the seller declined and your payment is held in escrow. Do not buy again — answer from what you have or explain you have no data.",
+                      },
+                ),
+              });
+              continue;
+            }
+
+            emit({
+              zone: "buyer",
+              msg: "Decides to buy the live report — initiating x402 payment",
+            });
             await sleep(STEP_MS);
 
             const out = await runX402Payment(
@@ -750,6 +808,8 @@ export async function GET(request: Request) {
               forceDecline,
             );
             paid = true;
+            boughtReport = out.report;
+            boughtDelivered = out.delivered;
 
             toolResults.push({
               type: "tool_result",
@@ -769,9 +829,19 @@ export async function GET(request: Request) {
         // Safety net: loop exhausted without a final text-only turn.
         await finishRun();
       } catch (error) {
-        emit({ zone: "system", level: "error", msg: errorMessage(error) });
+        // A client abort surfaces here too; don't report it as a run failure.
+        if (!(aborted || signal.aborted)) {
+          await persistTranscript();
+          emit({ zone: "system", level: "error", msg: errorMessage(error) });
+          emit({ done: true });
+        }
       } finally {
-        controller.close();
+        signal.removeEventListener("abort", onAbort);
+        try {
+          controller.close();
+        } catch {
+          /* already closed/errored */
+        }
       }
     },
   });

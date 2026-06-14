@@ -11,10 +11,15 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/agents", { cache: "no-store" });
-    const json = (await res.json()) as { agents?: ClientAgent[] };
-    setAgents(json.agents ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/agents", { cache: "no-store" });
+      const json = (await res.json()) as { agents?: ClientAgent[] };
+      setAgents(json.agents ?? []);
+    } catch {
+      setAgents([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -28,8 +33,8 @@ export default function DashboardPage() {
           <span className="eyebrow">Portal showcase</span>
           <h1 className="page__title">Payment agents</h1>
           <p className="page__lead">
-            Each agent owns a smart wallet and autonomously pays x402 resources into a
-            plugin-gated escrow. Create one, fund it, and watch it settle on-chain.
+            Each agent owns a smart wallet and autonomously pays x402 resources into a plugin-gated
+            escrow. Create one, fund it, and watch it settle on-chain.
           </p>
         </div>
       </div>
@@ -55,7 +60,11 @@ export default function DashboardPage() {
         <>
           <div className="agent-grid">
             {agents.map((agent) => (
-              <Link key={agent.id} href={`/agents/${agent.id}`} className="agent-card bw-card group">
+              <Link
+                key={agent.id}
+                href={`/agents/${agent.id}`}
+                className="agent-card bw-card group"
+              >
                 <div className="agent-card__top">
                   <span className="agent-card__name">{agent.name}</span>
                   {agent.isDefault ? <span className="pill agent-card__badge">Default</span> : null}

@@ -1,18 +1,35 @@
-# Settlement Theater (demo)
+# Payment agents (demo)
 
-`@reineira-os/x402-rss-demo` — the single-screen demo for the x402 + RSS
-insured-settlement flow.
+`@reineira-os/x402-rss-demo` — a Next.js dashboard for the x402 + RSS
+insured-settlement flow, with autonomous buyer and seller agents settling
+real on-chain payments on Arbitrum Sepolia.
 
-> **Status: SKELETON.** This package is the scaffold from A (DEV-159). Full demo
-> logic — live logs, countdown, progress, and real x402 settlement — lands in B
-> (DEV-194).
+## What it is
+
+A "Payment agents" dashboard with a passkey-secured treasury and two
+autonomous Claude agents — a buyer that pays for resources and a seller that
+serves them behind an x402 paywall. Payments settle on-chain via our own
+x402 → escrow rail, with optional insurance coverage and claims. A
+"Settlement Theater" terminal surfaces each step as it happens.
+
+Sidebar navigation:
+
+| Route        | Page         | Shows                                                              |
+| ------------ | ------------ | ------------------------------------------------------------------ |
+| `/`          | Agents       | Buyer + seller agents, treasury, the Settlement Theater terminal   |
+| `/analytics` | Analytics    | Charts over settlement activity                                    |
+| `/plugins`   | Plugins      | RSS resolver / policy plugins wired into the escrow                |
+| `/resources` | Resources    | The paid-resource catalog the buyer can purchase                   |
+| `/two-key`   | Two-Key Halt | A security primitive on x402 rails (Sentinel / Guardian / verdict) |
 
 ## Run
 
-From the monorepo root:
+The demo needs the facilitator running (it does `/verify` + `/settle`) and an
+`apps/demo/.env.local` with the Arbitrum Sepolia + agent keys.
+
+From the monorepo root, start the facilitator (`packages/facilitator`), then:
 
 ```bash
-pnpm install
 pnpm --filter @reineira-os/x402-rss-demo dev
 ```
 
@@ -24,36 +41,13 @@ pnpm build        # next build
 pnpm typecheck    # tsc --noEmit
 ```
 
-### Buyer-agent client
-
-A standalone buyer-agent script that hits the 402 resource:
-
-```bash
-pnpm --filter @reineira-os/x402-rss-demo agent
-# or: RESOURCE_URL=http://localhost:3000/api/resource pnpm agent
-```
-
-It performs a `GET /api/resource`, logs the `402 PAYMENT REQUIRED` challenge,
-and stops at the stub where EIP-3009 signing + retry-with-payment will go.
-
-## What each zone shows
-
-The home screen is a single-screen, 3-zone layout:
-
-| Zone                       | Position | Shows                                                              |
-| -------------------------- | -------- | ----------------------------------------------------------------- |
-| **Buyer**                  | left     | Buyer-agent event log (request → 402 → pay → fetch artifact)       |
-| **Settlement Theater**     | center   | The deal-card: status, a countdown to deadline, and a progress grid|
-| **Provider**               | right    | Provider/resource-server event log (challenge → verify → deliver)  |
-
-In the skeleton, logs are placeholders, the countdown reads `--:--`, and the
-progress grid renders empty cells.
-
 ## Routes
 
-- `GET /api/resource` — x402 resource server.
-  - No `x-payment` header → `402` with an x402 `PAYMENT-REQUIRED` body
-    (version 2, scheme `exact`, network `eip155:421614`, USDC asset from
-    `@reineira-os/x402-rss-shared`).
-  - With `x-payment` header → `200` with a mock batch-inference artifact
-    (settlement verification is stubbed for now).
+- `GET /api/resource` — the x402 resource server.
+  - No `payment-signature` header → `402` with an x402 `payment-required`
+    body (version 2, scheme `exact`, network `eip155:421614`, USDC asset
+    from `@reineira-os/x402-rss-shared`).
+  - With `payment-signature` header → validates the escrow, runs real
+    facilitator `/verify` + `/settle`, then returns a **live on-chain data
+    report** (`lib/resources.ts`): current Arbitrum Sepolia block + gas plus
+    ETH/USD spot, fetched fresh at request time. Nothing is hardcoded.

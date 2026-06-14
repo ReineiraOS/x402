@@ -1,9 +1,11 @@
 {
   "name": "@reineira-os/rss",
   "version": "0.0.0",
-  "description": "Reineira Settlement Standard — IConditionResolver / IUnderwriterPolicy / IFundingSource semantics and conformance suite",
+  "description": "Reineira Settlement Standard — IConditionResolver / IUnderwriterPolicy conformance suites plus the interface-only IFundingSource (conformance roadmap)",
   "license": "MIT",
-  "files": ["contracts"],
+  "files": [
+    "contracts"
+  ],
   "scripts": {
     "build": "forge build",
     "compile": "forge build",

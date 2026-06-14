@@ -1,5 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --filter @reineira-os/x402-facilitator^... run build",
   "functions": {
     "api/[[...route]].ts": {
       "runtime": "nodejs",

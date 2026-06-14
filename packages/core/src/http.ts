@@ -24,15 +24,26 @@ function safeBase64Decode(data: string): string {
   return Buffer.from(data, "base64").toString("utf-8");
 }
 
+// Decode a base64(JSON) header. A non-base64 string OR a base64-shaped-but-non-JSON
+// payload (e.g. "", "YQ==") both surface as the same "Invalid payment ... header" error,
+// rather than leaking a raw SyntaxError to facilitator/server callers.
+function decodeHeader<T>(value: string, label: string): T {
+  if (!Base64EncodedRegex.test(value)) {
+    throw new Error(label);
+  }
+  try {
+    return JSON.parse(safeBase64Decode(value)) as T;
+  } catch {
+    throw new Error(label);
+  }
+}
+
 export function encodePaymentRequiredHeader(paymentRequired: PaymentRequired): string {
   return safeBase64Encode(JSON.stringify(paymentRequired));
 }
 
 export function decodePaymentRequiredHeader(paymentRequiredHeader: string): PaymentRequired {
-  if (!Base64EncodedRegex.test(paymentRequiredHeader)) {
-    throw new Error("Invalid payment required header");
-  }
-  return JSON.parse(safeBase64Decode(paymentRequiredHeader)) as PaymentRequired;
+  return decodeHeader<PaymentRequired>(paymentRequiredHeader, "Invalid payment required header");
 }
 
 export function encodePaymentSignatureHeader(paymentPayload: PaymentPayload): string {
@@ -40,10 +51,7 @@ export function encodePaymentSignatureHeader(paymentPayload: PaymentPayload): st
 }
 
 export function decodePaymentSignatureHeader(paymentSignatureHeader: string): PaymentPayload {
-  if (!Base64EncodedRegex.test(paymentSignatureHeader)) {
-    throw new Error("Invalid payment signature header");
-  }
-  return JSON.parse(safeBase64Decode(paymentSignatureHeader)) as PaymentPayload;
+  return decodeHeader<PaymentPayload>(paymentSignatureHeader, "Invalid payment signature header");
 }
 
 export function encodePaymentResponseHeader(paymentResponse: SettleResponse): string {
@@ -51,8 +59,5 @@ export function encodePaymentResponseHeader(paymentResponse: SettleResponse): st
 }
 
 export function decodePaymentResponseHeader(paymentResponseHeader: string): SettleResponse {
-  if (!Base64EncodedRegex.test(paymentResponseHeader)) {
-    throw new Error("Invalid payment response header");
-  }
-  return JSON.parse(safeBase64Decode(paymentResponseHeader)) as SettleResponse;
+  return decodeHeader<SettleResponse>(paymentResponseHeader, "Invalid payment response header");
 }

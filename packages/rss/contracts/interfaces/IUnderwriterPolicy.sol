@@ -11,7 +11,7 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 ///         2. How risk is evaluated from proof data (e.g., zkTLS/zkFetch attestations)
 ///         3. How disputes are judged when claims are filed
 /// @dev Must implement ERC-165 so IPolicyRegistry can validate the interface.
-///      For the confidential (FHE) variant see {IConfidentialUnderwriterPolicy}.
+///      A confidential (FHE) variant is planned (not in this repo).
 interface IUnderwriterPolicy is IERC165 {
     /// @notice Called by CoverageManager when coverage is created to register policy-specific data
     /// @param coverageId The coverage identifier

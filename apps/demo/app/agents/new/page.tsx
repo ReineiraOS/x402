@@ -19,6 +19,25 @@ export default function NewAgentPage() {
   const [plugins, setPlugins] = useState<PluginManifest[]>([]);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameTouched, setNameTouched] = useState(false);
+
+  const NAME_MAX = 40;
+  const PROMPT_MAX = 300;
+  const DEADLINE_MIN = 10;
+  const DEADLINE_MAX = 86400;
+
+  const trimmedName = name.trim();
+  const nameError =
+    trimmedName.length === 0
+      ? "Give the agent a name."
+      : trimmedName.length > NAME_MAX
+        ? `Keep the name under ${NAME_MAX} characters.`
+        : null;
+  const promptOver = prePrompt.length > PROMPT_MAX;
+  const deadlineError =
+    deadlineSeconds < DEADLINE_MIN || deadlineSeconds > DEADLINE_MAX
+      ? `Pick a release window between ${DEADLINE_MIN}s and ${DEADLINE_MAX / 3600}h.`
+      : null;
 
   const DEADLINE_PRESETS = [
     { label: "1 min", value: 60 },
@@ -43,10 +62,10 @@ export default function NewAgentPage() {
     setPluginIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
 
   const canProceed = useMemo(() => {
-    if (step === 0) return name.trim().length > 0;
-    if (step === 1) return pluginIds.length > 0;
+    if (step === 0) return !nameError && !promptOver;
+    if (step === 1) return pluginIds.length > 0 && !deadlineError;
     return true;
-  }, [step, name, pluginIds]);
+  }, [step, nameError, promptOver, pluginIds, deadlineError]);
 
   const selectedPlugins = plugins.filter((p) => pluginIds.includes(p.id));
 
@@ -80,7 +99,8 @@ export default function NewAgentPage() {
     <div className="container wizard">
       <div className="wizard__head">
         <Link href="/" className="btn-outline wizard__back">
-          <Icon name="arrowRight" size={14} stroke={2} style={{ transform: "rotate(180deg)" }} /> Back
+          <Icon name="arrowRight" size={14} stroke={2} style={{ transform: "rotate(180deg)" }} />{" "}
+          Back
         </Link>
         <div className="wizard__progress">
           {STEPS.map((label, i) => (
@@ -90,7 +110,9 @@ export default function NewAgentPage() {
                   i === step ? " wizard__dot--active" : ""
                 }`}
               />
-              <span className={`wizard__step-label${i === step ? " wizard__step-label--active" : ""}`}>
+              <span
+                className={`wizard__step-label${i === step ? " wizard__step-label--active" : ""}`}
+              >
                 {label}
               </span>
             </div>
@@ -113,18 +135,46 @@ export default function NewAgentPage() {
                 placeholder="e.g. Market Scout"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onBlur={() => setNameTouched(true)}
+                maxLength={NAME_MAX}
+                aria-invalid={nameTouched && !!nameError}
                 autoFocus
               />
+              {nameTouched && nameError ? (
+                <span className="field__error">
+                  <Icon name="alert" size={13} stroke={2} /> {nameError}
+                </span>
+              ) : null}
             </label>
             <label className="field">
-              <span className="field__label">Pre-prompt</span>
+              <div className="field__row">
+                <span className="field__label">
+                  Pre-prompt <span className="field__opt">optional</span>
+                </span>
+                <span className={`field__counter${promptOver ? " field__counter--over" : ""}`}>
+                  {prePrompt.length}/{PROMPT_MAX}
+                </span>
+              </div>
               <textarea
                 className="field__textarea"
                 placeholder="Personality / standing instructions — e.g. “Only buy data you actually need; stay terse.”"
                 value={prePrompt}
                 onChange={(e) => setPrePrompt(e.target.value)}
                 rows={4}
+                aria-invalid={promptOver}
               />
+              {promptOver ? (
+                <span className="field__error">
+                  <Icon name="alert" size={13} stroke={2} /> {prePrompt.length - PROMPT_MAX}{" "}
+                  character
+                  {prePrompt.length - PROMPT_MAX === 1 ? "" : "s"} over the limit.
+                </span>
+              ) : (
+                <span className="field__hint">
+                  Sets the agent’s persona and the voice it reasons in. Leave blank for a neutral
+                  agent.
+                </span>
+              )}
             </label>
           </div>
         ) : step === 1 ? (
@@ -172,7 +222,9 @@ export default function NewAgentPage() {
                         <div className="plugin-config__head">
                           <Icon name="clock" size={14} stroke={2} />
                           <span className="plugin-config__title">Release after</span>
-                          <span className="plugin-config__hint mono">resolverData: uint256 deadline</span>
+                          <span className="plugin-config__hint mono">
+                            resolverData: uint256 deadline
+                          </span>
                         </div>
                         <div className="deadline-presets">
                           {DEADLINE_PRESETS.map((preset) => (
@@ -189,20 +241,27 @@ export default function NewAgentPage() {
                             custom
                             <input
                               type="number"
-                              min={10}
+                              min={DEADLINE_MIN}
+                              max={DEADLINE_MAX}
                               className="deadline-custom__input"
                               value={deadlineSeconds}
+                              aria-invalid={!!deadlineError}
                               onChange={(e) =>
-                                setDeadlineSeconds(Math.max(10, Number(e.target.value) || 10))
+                                setDeadlineSeconds(
+                                  Math.min(
+                                    DEADLINE_MAX,
+                                    Math.max(DEADLINE_MIN, Number(e.target.value) || DEADLINE_MIN),
+                                  ),
+                                )
                               }
                             />
                             s
                           </label>
                         </div>
                         <p className="plugin-config__note">
-                          Funds sit in escrow until {formatDeadline(deadlineSeconds)} after the agent
-                          pays; then the seller can redeem. Until then the buyer is protected from a
-                          no-show.
+                          Funds sit in escrow until {formatDeadline(deadlineSeconds)} after the
+                          agent pays; then the seller can redeem. Until then the buyer is protected
+                          from a no-show.
                         </p>
                       </div>
                     ) : null}
@@ -215,8 +274,8 @@ export default function NewAgentPage() {
           <div className="wizard__section">
             <h2 className="wizard__title">Review</h2>
             <p className="wizard__hint">
-              Creating the agent provisions a dedicated ZeroDev smart wallet (gas sponsored). Fund it
-              with testnet USDC, then run deals.
+              Creating the agent provisions a dedicated ZeroDev smart wallet (gas sponsored). Fund
+              it with testnet USDC, then run deals.
             </p>
             <div className="review">
               <div className="review__row">
@@ -268,15 +327,15 @@ export default function NewAgentPage() {
           <span />
         )}
         {step < STEPS.length - 1 ? (
-          <button
-            className="btn-cta"
-            onClick={() => setStep((s) => s + 1)}
-            disabled={!canProceed}
-          >
+          <button className="btn-cta" onClick={() => setStep((s) => s + 1)} disabled={!canProceed}>
             Continue
           </button>
         ) : (
-          <button className="btn-cta" onClick={() => void create()} disabled={creating || !canProceed}>
+          <button
+            className="btn-cta"
+            onClick={() => void create()}
+            disabled={creating || !canProceed}
+          >
             {creating ? "Creating wallet…" : "Create agent + smart wallet"}
           </button>
         )}

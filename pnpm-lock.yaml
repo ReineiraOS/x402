@@ -10,7 +10,7 @@ importers:
     devDependencies:
       forge-std:
         specifier: github:foundry-rs/forge-std
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/81df7a1a97ab719d65013ab6e6369a58835b882c
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/257559546b763ec5fa7371fb77fef9102db86446
       prettier:
         specifier: ^3.4.0
         version: 3.8.3
@@ -23,6 +23,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.102.0
         version: 0.102.0(zod@4.4.3)
+      '@neondatabase/serverless':
+        specifier: ^1.1.0
+        version: 1.1.0
       '@reineira-os/x402-core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -855,6 +858,10 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
+  '@neondatabase/serverless@1.1.0':
+    resolution: {integrity: sha512-r3ZZhRjEcfEdKIZnoB1RusNgvHuaBRqfCzV4Gi+5A9yUX0S4HTws/ASWqt13wL4y4I+0rqsWGdA2w7EQXHi3+Q==}
+    engines: {node: '>=19.0.0'}
+
   '@next/env@16.2.7':
     resolution: {integrity: sha512-tMJizPlj6ZYpBMMdK8S0LJufrP4QTdR6pcv9KQ/bVETPAmg0j1mlHE9G2c38UyGHxoBapgwuj7XjbGJ2RcDFOg==}
 
@@ -1365,8 +1372,8 @@ packages:
   fix-dts-default-cjs-exports@1.0.1:
     resolution: {integrity: sha512-pVIECanWFC61Hzl2+oOCtoJ3F17kglZC/6N94eRWycFgBH35hHx0Li604ZIzhseh97mf2p0cv7vVrOZGoqhlEg==}
 
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/81df7a1a97ab719d65013ab6e6369a58835b882c:
-    resolution: {gitHosted: true, tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/81df7a1a97ab719d65013ab6e6369a58835b882c}
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/257559546b763ec5fa7371fb77fef9102db86446:
+    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/257559546b763ec5fa7371fb77fef9102db86446}
     version: 1.16.1
 
   fsevents@2.3.3:
@@ -2175,6 +2182,8 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
+  '@neondatabase/serverless@1.1.0': {}
+
   '@next/env@16.2.7': {}
 
   '@next/swc-darwin-arm64@16.2.7':
@@ -2654,7 +2663,7 @@ snapshots:
       mlly: 1.8.2
       rollup: 4.61.0
 
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/81df7a1a97ab719d65013ab6e6369a58835b882c: {}
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/257559546b763ec5fa7371fb77fef9102db86446: {}
 
   fsevents@2.3.3:
     optional: true
