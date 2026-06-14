@@ -41,8 +41,8 @@ export default function ResourcesPage() {
           <span className="eyebrow">Catalog</span>
           <h1 className="page__title">Resources</h1>
           <p className="page__lead">
-            What an agent can buy over x402. Every purchase settles into a plugin-gated escrow —
-            funds are held until the release condition is met, not sent straight to the seller.
+            What an agent can buy over x402. Every purchase can settle into Escrow — funds stay
+            held until a Gate verifies the release condition, not sent straight to the seller.
           </p>
         </div>
       </div>
@@ -68,7 +68,7 @@ export default function ResourcesPage() {
               <div className="cat-card__tags">
                 <span className={`cat-card__mode cat-card__mode--${r.mode}`}>
                   <Icon name={r.mode === "escrow" ? "lock" : "bolt"} size={11} stroke={2} />
-                  {r.mode === "escrow" ? "escrow-gated" : "direct"}
+                  {r.mode === "escrow" ? "Escrow + Gate" : "direct"}
                 </span>
                 <span className="plugin-card__tag mono">{r.id}</span>
               </div>

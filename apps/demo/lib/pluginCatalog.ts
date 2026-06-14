@@ -34,10 +34,10 @@ function bundledCatalog(): PluginManifest[] {
       kind: "condition-resolver",
       interface: "IConditionResolver",
       description:
-        "Escrow releases to the seller only after a deadline. Until then funds sit in escrow; mandatory anti-stranding plugin for x402 purchases.",
+        "Escrow holds funds until a deadline passes; then the seller can redeem. This mandatory TimeLock Gate prevents stranded x402 purchases.",
       resolverData: {
         abi: "uint256",
-        description: "Unix timestamp after which the escrow can be released.",
+        description: "Unix timestamp after which the Escrow can be released.",
       },
       addresses: { [CHAIN_ID]: timeLockAddress },
       tags: ["time", "core", "anti-stranding"],
@@ -50,11 +50,11 @@ function bundledCatalog(): PluginManifest[] {
       kind: "underwriter-policy",
       interface: "IUnderwriterPolicy",
       description:
-        "Optional insurance: coverage is bought against the escrow at purchase. If the seller fails to attest delivery before the deadline (a judgeable breach), the buyer can claim a payout from an underwriter pool. The second plugin category — underwriting, not just release conditions.",
+        "Optional Insurance can be attached to the Escrow at purchase. If the seller fails to attest delivery before the deadline, the buyer can claim a payout from an underwriter pool. Gates decide whether funds can release; Insurance covers bad outcomes.",
       resolverData: {
         abi: "(address resolver, uint256 escrowId)",
         description:
-          "policyData binds the coverage to a breach oracle (the Delivery Deadline Resolver) for a specific escrow. Zero premium on testnet.",
+          "policyData binds coverage to the Delivery Deadline Gate for a specific Escrow. Zero premium on testnet.",
       },
       addresses: { [CHAIN_ID]: coverageAddress },
       tags: ["insurance", "underwriter", "coverage"],
@@ -67,7 +67,7 @@ function bundledCatalog(): PluginManifest[] {
       kind: "condition-resolver",
       interface: "IConditionResolver",
       description:
-        "Attester marks delivery before a deadline; release requires attestation. Breach (no attestation past the deadline) is judgeable, which is what the Delivery Coverage Policy underwrites.",
+        "An attester confirms delivery before the deadline; release requires that attestation. If no attestation arrives before the deadline, the breach can be evaluated by the Insurance policy.",
       resolverData: {
         abi: "(uint256 deadline, address attester)",
         description: "Deadline and the address allowed to attest delivery.",
@@ -83,10 +83,10 @@ function bundledCatalog(): PluginManifest[] {
       kind: "condition-resolver",
       interface: "IConditionResolver",
       description:
-        "Releases when a zkTLS (Reclaim) proof shows an HTTPS endpoint returned the expected data.",
+        "Gate releases when a zkTLS proof from Reclaim Protocol shows an HTTPS endpoint returned the expected data.",
       resolverData: {
         abi: "(string provider, string contextAddress, string contextMessage)",
-        description: "Reclaim provider id and expected context fields.",
+        description: "Reclaim provider ID and expected context fields.",
       },
       addresses: { [CHAIN_ID]: null },
       tags: ["zktls", "web-proof"],
@@ -99,7 +99,7 @@ function bundledCatalog(): PluginManifest[] {
       kind: "condition-resolver",
       interface: "IConditionResolver",
       description:
-        "Releases when a Chainlink feed crosses a threshold (with staleness protection).",
+        "Gate releases when a Chainlink feed crosses a threshold, with staleness protection.",
       resolverData: {
         abi: "(address feed, int256 threshold, uint8 op, uint256 maxStaleness)",
         description: "Feed address, threshold, comparison op, staleness bound.",

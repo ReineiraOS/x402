@@ -31,10 +31,11 @@ export default function DashboardPage() {
       <div className="page__head">
         <div>
           <span className="eyebrow">Portal showcase</span>
-          <h1 className="page__title">Payment agents</h1>
+          <h1 className="page__title">Agentic Payments</h1>
           <p className="page__lead">
-            Each agent owns a smart wallet and autonomously pays x402 resources into a plugin-gated
-            escrow. Create one, fund it, and watch it settle on-chain.
+            Each agent pays x402 resources from your passkey treasury. Funds settle into
+            Escrow and release only when a Gate&apos;s condition is met. Create one, authorize
+            a budget, and watch it settle on-chain.
           </p>
         </div>
       </div>

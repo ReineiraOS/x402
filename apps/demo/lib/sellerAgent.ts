@@ -11,7 +11,7 @@ const DELIVER_TOOL: Tool = {
   name: "deliver_report",
   description:
     "Fulfill the buyer's data order by delivering your composed market read. Call this when " +
-    "you choose to fulfill. After this you attest delivery on-chain and the escrow releases your payment.",
+    "you choose to fulfill. After delivery is attested on-chain, the Escrow can release your payment.",
   input_schema: {
     type: "object",
     properties: {
@@ -39,8 +39,8 @@ function buildSellerPrompt(resource: ResourceDef, data: string): string {
   const price = (Number(resource.priceAtomic) / 1e6).toFixed(2);
   return (
     `${SELLER_PERSONA}\n\n` +
-    `A buyer paid about ${price} USDC into a plugin-gated escrow for: "${resource.task}"\n` +
-    `The payment is held — you are paid only once you attest delivery on-chain.\n` +
+    `A buyer paid about ${price} USDC into Escrow for: "${resource.task}"\n` +
+    `A Gate holds the payment until delivery is attested on-chain.\n` +
     `Fresh on-chain data you have to work with:\n${data}\n\n` +
     `Think out loud very briefly (one sentence, in your own voice), then call deliver_report with a crisp ` +
     `read composed from these exact numbers. Keep it terse; this is a live demo.`
@@ -64,7 +64,7 @@ export async function runSellerAgent(args: {
   if (forceDecline) {
     emit({
       zone: "seller",
-      msg: "Reviews the order and declines to deliver — the buyer's funds stay locked in escrow until the deadline.",
+      msg: "Reviews the order and declines to deliver — the buyer's funds stay held in Escrow until the deadline.",
     });
     return { delivered: false, report: null };
   }
@@ -77,7 +77,7 @@ export async function runSellerAgent(args: {
 
   const anthropic = new Anthropic({ apiKey });
   const messages: MessageParam[] = [
-    { role: "user", content: "A new data order just settled into escrow. Decide and act." },
+    { role: "user", content: "A new data order just settled into Escrow. Decide and act." },
   ];
 
   const modelStream = anthropic.messages.stream({
@@ -101,7 +101,7 @@ export async function runSellerAgent(args: {
     (block): block is ToolUseBlock => block.type === "tool_use" && block.name === "deliver_report",
   );
   if (!toolUse) {
-    emit({ zone: "seller", msg: "Declines to deliver this order — funds stay in escrow." });
+    emit({ zone: "seller", msg: "Declines to deliver this order — funds stay held in Escrow." });
     return { delivered: false, report: null };
   }
 

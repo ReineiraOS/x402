@@ -6,9 +6,9 @@ import { Shell } from "./components/Shell";
 const themeInit = `(function(){try{var s=localStorage.getItem("reineira-theme");var d=s==="dark"||s==="light"?s==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark");}catch(e){document.documentElement.classList.add("dark");}})();`;
 
 export const metadata: Metadata = {
-  title: "Payment Agents · ReineiraOS",
+  title: "Agentic Payments · ReineiraOS",
   description:
-    "Autonomous payment agents with their own smart wallets — pay x402 resources into plugin-gated RSS escrow. A ReineiraOS Portal showcase.",
+    "Autonomous payment agents pay x402 resources from a passkey treasury into Escrow with Gate-verified release conditions. A ReineiraOS Portal showcase.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },

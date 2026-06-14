@@ -164,6 +164,9 @@
     border-color var(--dur-2) var(--ease),
     box-shadow var(--dur-2) var(--ease);
 }
+.actor:hover {
+  border-color: var(--accent-blue);
+}
 .actor--active {
   border-color: var(--steel-25);
   box-shadow: 0 0 0 1px var(--steel-18);
@@ -182,16 +185,14 @@
   place-items: center;
   border-radius: var(--r-full);
   background: var(--tile-bg);
-  border: 1px solid var(--border-dark);
+  border: none;
   color: var(--accent-steel);
   transition:
     background var(--dur-2) var(--ease),
-    border-color var(--dur-2) var(--ease),
     color var(--dur-2) var(--ease);
 }
 .actor--active .actor__chip {
   background: var(--steel-18);
-  border-color: var(--steel-25);
   color: var(--accent-steel-hover);
   animation: beat-pulse 1.6s var(--ease) infinite;
 }
@@ -245,7 +246,6 @@
 }
 .actor--sentinel.actor--active .actor__chip {
   background: var(--blue-8);
-  border-color: var(--blue-25);
   color: var(--accent-blue);
 }
 /* Guardian accent: amber when it freezes the vault */
@@ -255,7 +255,6 @@
 }
 .actor--guardian.actor--active .actor__chip {
   background: rgba(243, 166, 40, 0.1);
-  border-color: rgba(243, 166, 40, 0.3);
   color: var(--st-spec);
 }
 
@@ -471,6 +470,9 @@
   overflow: hidden;
   padding: 0;
   background: var(--surface-base);
+}
+.log:global(.bw-card):hover {
+  border-color: var(--border-dark);
 }
 .log__bar {
   display: flex;

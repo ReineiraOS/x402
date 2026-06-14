@@ -171,15 +171,15 @@ export default function EditAgentPage() {
           Back
         </Link>
         <h1 className="edit__title">Edit agent</h1>
-        <span className="wizard__counter">wallet locked</span>
+        <span className="wizard__counter">treasury access locked</span>
       </div>
 
       <div className="wizard__body bw-card">
         <div className="wizard__section">
           <h2 className="wizard__title">Identity</h2>
           <p className="wizard__hint">
-            Change the name and standing instructions. The agent keeps its smart wallet and address
-            — funds and history are untouched.
+            Change the name and standing instructions. The agent keeps its treasury access,
+            existing deals, and spend history.
           </p>
           <label className="field">
             <span className="field__label">Name</span>
@@ -227,8 +227,8 @@ export default function EditAgentPage() {
         <div className="wizard__section edit__section">
           <h2 className="wizard__title">Plugins</h2>
           <p className="wizard__hint">
-            Condition resolvers gate how this agent&apos;s payments release. TimeLock is the
-            mandatory anti-stranding default.
+            TimeLock is the mandatory anti-stranding default for this agent; add Insurance to cover
+            bad outcomes.
           </p>
           <div className="plugin-list">
             {plugins.map((plugin) => {

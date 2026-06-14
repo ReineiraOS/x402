@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: "failed to create agent wallet",
+        error: "failed to create agent",
         detail: error instanceof Error ? error.message : String(error),
       },
       { status: 502 },
