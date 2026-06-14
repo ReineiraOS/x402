@@ -7,7 +7,7 @@ real on-chain payments on Arbitrum Sepolia.
 ## What it is
 
 A "Payment agents" dashboard with a passkey-secured treasury and two
-autonomous Claude agents — a buyer that pays for resources and a seller that
+autonomous AI agents — a buyer that pays for resources and a seller that
 serves them behind an x402 paywall. Payments settle on-chain via our own
 x402 → escrow rail, with optional insurance coverage and claims. A
 "Settlement Theater" terminal surfaces each step as it happens.
