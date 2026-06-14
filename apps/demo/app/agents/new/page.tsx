@@ -131,8 +131,8 @@ export default function NewAgentPage() {
           <div className="wizard__section">
             <h2 className="wizard__title">Plugins</h2>
             <p className="wizard__hint">
-              Gates from the Portal registry verify how the agent&apos;s payments release.
-              The TimeLock Gate is the mandatory anti-stranding default.
+              The TimeLock Gate is the mandatory anti-stranding default; add Insurance to cover
+              bad outcomes.
             </p>
             <div className="plugin-list">
               {plugins.map((plugin) => {
@@ -215,8 +215,8 @@ export default function NewAgentPage() {
           <div className="wizard__section">
             <h2 className="wizard__title">Review</h2>
             <p className="wizard__hint">
-              Creating the agent provisions a dedicated ZeroDev smart wallet (gas sponsored). Fund it
-              with testnet USDC, then run deals.
+              Creating the agent connects it to your passkey treasury. Authorize a testnet USDC
+              spend budget, then run deals.
             </p>
             <div className="review">
               <div className="review__row">
@@ -248,9 +248,9 @@ export default function NewAgentPage() {
                 </div>
               ) : null}
               <div className="review__row">
-                <span className="review__label">Smart wallet</span>
+                <span className="review__label">Treasury access</span>
                 <span className="review__value agents__muted">
-                  a fresh ZeroDev Kernel wallet — created with the agent
+                  pays from your passkey treasury via a session key
                 </span>
               </div>
             </div>
@@ -277,7 +277,7 @@ export default function NewAgentPage() {
           </button>
         ) : (
           <button className="btn-cta" onClick={() => void create()} disabled={creating || !canProceed}>
-            {creating ? "Creating wallet…" : "Create agent + smart wallet"}
+            {creating ? "Creating agent…" : "Create agent"}
           </button>
         )}
       </div>

@@ -60,7 +60,7 @@ function formatSecs(total: number): string {
 }
 
 const STATE_TEXT: Record<PurchaseState, string> = {
-  held: "held in escrow",
+  held: "held in Escrow",
   releasable: "releasable now",
   released: "released to seller",
   direct: "paid directly",
@@ -618,8 +618,8 @@ export function SettlementTheater({
   const paySteps = [
     { label: "402 — payment required", sub: deal?.price ? `provider asks ${deal.price}` : "" },
     { label: "authorization signed", sub: "EIP-3009 · ERC-1271" },
-    { label: "settled into escrow", sub: escrowId ? `escrow #${escrowId}` : "" },
-    { label: "paid", sub: "USDC → escrow" },
+    { label: "settled into Escrow", sub: escrowId ? `Escrow #${escrowId}` : "" },
+    { label: "paid", sub: "USDC → Escrow" },
   ];
 
   // ── Purchases: ledger enriched with live escrow status + spend analytics ──
@@ -655,7 +655,7 @@ export function SettlementTheater({
       st === "held"
         ? typeof r.deadline === "number"
           ? `held · seller redeems in ${formatSecs(left)}`
-          : "held in escrow"
+          : "held in Escrow"
         : st === "releasable"
           ? "releasable now"
           : st === "released"
@@ -799,12 +799,12 @@ export function SettlementTheater({
             <div className="pay__field">
               <span className="pay__k">from</span>
               <span className="pay__v mono">
-                {shortAddress(agent.address)} <em>agent smart wallet</em>
+                {shortAddress(agent.address)} <em>passkey treasury</em>
               </span>
             </div>
             <div className="pay__field">
               <span className="pay__k">to</span>
-              <span className="pay__v mono">{escrowId ? `escrow #${escrowId}` : "escrow …"}</span>
+              <span className="pay__v mono">{escrowId ? `Escrow #${escrowId}` : "Escrow …"}</span>
             </div>
             <div className="pay__field">
               <span className="pay__k">value</span>
@@ -977,7 +977,7 @@ export function SettlementTheater({
               <div className="purch-empty">
                 <Icon name="feed" size={22} stroke={1.5} />
                 <p>No purchases yet.</p>
-                <span className="agents__muted">Run a deal — every resource the agent buys lands here with its data and escrow status.</span>
+                <span className="agents__muted">Run a deal — every resource the agent buys lands here with its data and Escrow status.</span>
               </div>
             ) : (
               <>
@@ -1039,7 +1039,7 @@ export function SettlementTheater({
             </select>
             <label
               className="term__decline"
-              title="Make the seller agent decline this order so the escrow breaches — for demoing the insurance claim path"
+              title="Make the seller agent decline this order so the Escrow breaches — for demoing the Insurance claim path"
             >
               <input
                 type="checkbox"

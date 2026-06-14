@@ -134,10 +134,10 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
             <Icon name="passkey" size={27} stroke={2} />
           </span>
           <div className="treasury__meta">
-            <span className="treasury__cap">Treasury · master wallet</span>
+            <span className="treasury__cap">Treasury · passkey wallet</span>
             <span className="treasury__intro">
-              Create a passkey-owned smart wallet — you approve with your fingerprint, fund it once, and your
-              agents pay from it (within a budget you set). No per-agent wallets.
+              Create a passkey-owned treasury — you approve with your fingerprint, fund it once, and your
+              agents pay from it within a budget you set. No per-agent wallets.
             </span>
           </div>
         </div>
@@ -184,7 +184,7 @@ export function TreasuryPanel({ agents, onChange }: { agents: ClientAgent[]; onC
       </div>
 
       <div className="treasury__actions">
-        <button className="treasury__reset" onClick={reset} title="Forget this passkey wallet on this device and create a new one">
+        <button className="treasury__reset" onClick={reset} title="Forget this passkey treasury on this device and create a new one">
           Reset
         </button>
         <button

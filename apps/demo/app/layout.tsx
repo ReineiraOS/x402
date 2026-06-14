@@ -8,7 +8,7 @@ const themeInit = `(function(){try{var s=localStorage.getItem("reineira-theme");
 export const metadata: Metadata = {
   title: "Agentic Payments · ReineiraOS",
   description:
-    "Autonomous payment agents with their own smart wallets — pay x402 resources into plugin-gated RSS escrow. A ReineiraOS Portal showcase.",
+    "Autonomous payment agents pay x402 resources from a passkey treasury into Escrow with Gate-verified release conditions. A ReineiraOS Portal showcase.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },

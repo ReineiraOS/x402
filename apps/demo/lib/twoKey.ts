@@ -220,7 +220,7 @@ export async function runTwoKeyHalt(args: {
 
   if (!forceFalseAlarm) {
     // STEP 2 — staged attacker drains the vault below its floor (one real on-chain write, labelled).
-    emit({ zone: "system", label: "staged", msg: "Staged attacker transaction — drains the vault below its recorded floor. (Labelled staged, like compute is mocked.)" });
+    emit({ zone: "system", label: "staged", msg: "Staged attacker transaction — drains the vault below its recorded floor. (Labelled staged, like mocked compute.)" });
     const drained = await ctx.send(ctx.backend, { address: cfg.vault, abi: vaultAbi, functionName: "demoDrain", args: [DRAIN_ATOMIC] });
     txs.stagedDrain = drained.hash;
     v = await vaultState(cfg, ctx.read);
@@ -230,7 +230,7 @@ export async function runTwoKeyHalt(args: {
     // restore/re-deposit racing the redeem. The DECISION to alarm is scripted; the proof is real.
     const latched = await ctx.send(ctx.sentinel, { address: cfg.resolver, abi: resolverAbi, functionName: "latchBreach", args: [escrowId] });
     txs.alertLatch = latched.hash;
-    emit({ zone: "sentinel", label: "scripted", kind: "alert", msg: "Sentinel raises the alarm and commits the breach on-chain (latched) — the decision to alarm is scripted, the on-chain proof is real.", tx: latched.hash, arbiscan: arbiscan(latched.hash) });
+    emit({ zone: "sentinel", label: "scripted", kind: "alert", msg: "Sentinel raises the alarm and commits the breach on-chain. The decision to alarm is scripted; the on-chain proof is real.", tx: latched.hash, arbiscan: arbiscan(latched.hash) });
     await sleep(STEP_MS);
   } else {
     emit({ zone: "sentinel", label: "scripted", kind: "alert", msg: "Sentinel raises an alarm — but the vault is actually fine. A false alarm." });

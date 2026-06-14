@@ -84,8 +84,8 @@ function makeTranscript() {
           kind: "coverage",
           text:
             status === "active"
-              ? `coverage #${id ?? "—"} active · payout on delivery breach`
-              : `coverage ${status ?? "pending"} · payout pending one-time setup (testnet)`,
+              ? `Insurance #${id ?? "—"} active · payout on delivery breach`
+              : `Insurance ${status ?? "pending"} · payout pending one-time setup (testnet)`,
           tx: str(e.tx) ?? null,
         });
         return;
@@ -200,7 +200,7 @@ async function createBuyerSigner(
     } catch (error) {
       throw new Error(
         `Could not activate the treasury on-chain (${errorMessage(error)}). If this is an older passkey ` +
-          `wallet, open the treasury panel → Reset → Use existing to re-create it on the patched validator.`,
+          `treasury, open the treasury panel → Reset → Use existing to re-create it on the patched validator.`,
       );
     }
     const remaining =
@@ -220,13 +220,13 @@ async function createBuyerSigner(
     const wallet = await createAgentWallet(agentKey as `0x${string}`);
     emit({
       zone: "buyer",
-      msg: `${agent ? `Agent "${agent.name}"` : "Agent"} smart wallet (ZeroDev Kernel): ${wallet.address}`,
+      msg: `${agent ? `Passkey treasury for agent "${agent.name}"` : "Passkey treasury"} (ZeroDev Kernel): ${wallet.address}`,
     });
     const { deployedNow, txHash } = await wallet.deployIfNeeded();
     if (deployedNow) {
       emit({
         zone: "buyer",
-        msg: "Smart wallet deployed on-chain (gas sponsored by paymaster)",
+        msg: "Treasury activated on-chain (gas sponsored by paymaster)",
         tx: txHash,
         arbiscan: txHash ? `https://sepolia.arbiscan.io/tx/${txHash}` : undefined,
       });
@@ -234,13 +234,13 @@ async function createBuyerSigner(
     const balance = await wallet.usdcBalance();
     emit({
       zone: "buyer",
-      msg: `Wallet balance: ${(Number(balance) / 1e6).toFixed(2)} USDC`,
+      msg: `Treasury balance: ${(Number(balance) / 1e6).toFixed(2)} USDC`,
     });
     if (balance === 0n) {
       emit({
         zone: "system",
         level: "error",
-        msg: `Agent wallet ${wallet.address} holds 0 USDC — faucet testnet USDC to it before running.`,
+        msg: `Treasury ${wallet.address} holds 0 USDC — faucet testnet USDC to it before running.`,
       });
     }
     return wallet.signer;
@@ -248,7 +248,7 @@ async function createBuyerSigner(
 
   const buyerKey = process.env.BUYER_PRIVATE_KEY;
   if (!buyerKey) {
-    throw new Error("Neither an agent wallet nor BUYER_PRIVATE_KEY is configured");
+    throw new Error("Neither a passkey treasury nor BUYER_PRIVATE_KEY is configured");
   }
   const account = privateKeyToAccount(buyerKey as `0x${string}`);
   const publicClient = createPublicClient({
@@ -323,7 +323,7 @@ async function runX402Payment(
   emit({
     zone: "system",
     msg: escrowExtra
-      ? `402 Payment Required — provider asks ${price}, payment goes to escrow #${escrowExtra.escrowId} (not directly to the seller)`
+      ? `402 Payment Required — provider asks ${price}, payment goes to Escrow #${escrowExtra.escrowId} (not directly to the seller)`
       : `402 Payment Required — provider asks ${price} for the call`,
   });
   await sleep(STEP_MS);
@@ -340,7 +340,7 @@ async function runX402Payment(
   emit({
     zone: "buyer",
     msg: escrowExtra
-      ? "Signs the payment from its smart wallet — EIP-3009 ReceiveWithAuthorization, nonce bound to the escrow"
+      ? "Signs the payment from the passkey treasury session key — EIP-3009 ReceiveWithAuthorization, nonce bound to the Escrow"
       : "Signs the payment — EIP-3009, no gas, no wallet popup",
   });
   await sleep(STEP_MS);
@@ -348,7 +348,7 @@ async function runX402Payment(
   emit({
     zone: "system",
     msg: escrowExtra
-      ? "Facilitator verifies the smart-wallet signature (ERC-1271), then settles into the escrow on Arbitrum…"
+      ? "Facilitator verifies the treasury signature (ERC-1271), then settles into Escrow on Arbitrum…"
       : "Facilitator verifies the signature, then settles on Arbitrum (pays gas for the buyer)…",
   });
   const paid = await fetch(resourceUrl, {
@@ -399,7 +399,7 @@ async function runX402Payment(
   emit({
     zone: "system",
     msg: escrowExtra
-      ? `Paid ✓ — USDC moved ${treasury ? "treasury" : "agent wallet"} → Escrow #${escrowExtra.escrowId} (seller is paid when the release condition is met)`
+      ? `Paid ✓ — USDC moved from treasury → Escrow #${escrowExtra.escrowId} (seller is paid when the Gate condition is met)`
       : "Paid ✓ — USDC moved Buyer → Provider",
     tx,
     arbiscan: tx ? `https://sepolia.arbiscan.io/tx/${tx}` : undefined,
@@ -417,7 +417,7 @@ async function runX402Payment(
     const expiry = baseExpiry + CLAIM_WINDOW_SECONDS;
     emit({
       zone: "buyer",
-      msg: "Buys delivery coverage against the escrow — DeliveryPolicy on the underwriter pool",
+      msg: "Attaches Insurance coverage to the Escrow — DeliveryPolicy on the underwriter pool",
     });
     try {
       const cov = await attachCoverage({
@@ -441,7 +441,7 @@ async function runX402Payment(
         emit({ kind: "coverage", coverageId: cov.coverageId, tx: cov.tx, status: cov.status });
         emit({
           zone: "system",
-          msg: `Coverage active ✓ — coverage #${cov.coverageId} bound to escrow #${escrowExtra.escrowId} (buyer can claim if the seller breaches delivery)`,
+          msg: `Insurance active ✓ — coverage #${cov.coverageId} bound to Escrow #${escrowExtra.escrowId} (buyer can claim if the seller breaches delivery)`,
           tx: cov.tx ?? undefined,
           arbiscan: cov.tx ? `https://sepolia.arbiscan.io/tx/${cov.tx}` : undefined,
         });
@@ -449,13 +449,13 @@ async function runX402Payment(
         emit({ kind: "coverage", status: cov.status });
         emit({
           zone: "system",
-          msg: `Coverage pending one-time protocol setup — ${cov.note ?? "owner setup not yet applied"}. The purchase itself is unaffected.`,
+          msg: `Insurance pending one-time protocol setup — ${cov.note ?? "owner setup not yet applied"}. The purchase itself is unaffected.`,
         });
       } else {
-        emit({ zone: "system", level: "error", msg: cov.note ?? "coverage attach failed" });
+        emit({ zone: "system", level: "error", msg: cov.note ?? "Insurance attach failed" });
       }
     } catch (covErr) {
-      emit({ zone: "system", level: "error", msg: `coverage attach error: ${errorMessage(covErr)}` });
+      emit({ zone: "system", level: "error", msg: `Insurance attach error: ${errorMessage(covErr)}` });
     }
     await sleep(STEP_MS);
   }
@@ -478,7 +478,7 @@ async function runX402Payment(
     emit({
       zone: "system",
       msg: escrowExtra
-        ? `Seller declined — ${price} stays locked in escrow #${escrowExtra.escrowId}; if undelivered by the deadline the buyer can claim insurance.`
+        ? `Seller declined — ${price} stays held in Escrow #${escrowExtra.escrowId}; if delivery is not attested before the deadline, the buyer can claim Insurance.`
         : "Seller declined the order — no data delivered.",
     });
     return { report, delivered: false, sellerRead: null };
@@ -495,14 +495,14 @@ async function runX402Payment(
       releaseTx = res.redeemTx;
       emit({
         zone: "seller",
-        msg: "Attests delivery on-chain and redeems the escrow — payment released to the seller",
+        msg: "Attests delivery on-chain and redeems the Escrow — payment released to the seller",
         tx: res.redeemTx,
         arbiscan: `https://sepolia.arbiscan.io/tx/${res.redeemTx}`,
       });
     } catch (relErr) {
       emit({
         zone: "seller",
-        msg: `Could not release the escrow on-chain (${errorMessage(relErr)}) — it can be released manually from Purchases.`,
+        msg: `Could not release the Escrow on-chain (${errorMessage(relErr)}) — it can be released manually from Purchases.`,
       });
     }
   }
@@ -558,7 +558,7 @@ function buildSystemPrompt(
     `You are an autonomous buying agent settling payments over x402.\n` +
     `Task: ${resource.task}\n` +
     `${budgetLine}\n` +
-    `A live data report "${resource.name}" is available for about ${price} USDC, paid into a plugin-gated escrow ` +
+    `A live data report "${resource.name}" is available for about ${price} USDC, paid into Escrow with Gate-verified release conditions ` +
     `(funds are held, not sent straight to the seller). You do not currently have this data.\n\n` +
     `Decide — guided by your standing instructions and your remaining budget — whether buying it is worth it right now. ` +
     `Think out loud briefly (1–2 sentences, in your own voice). Then EITHER call fetch_live_report to buy it, ` +
@@ -629,7 +629,7 @@ export async function GET(request: Request) {
           // still testable end-to-end in the browser (the reasoning narration is canned).
           emit({
             zone: "buyer",
-            msg: `${agent ? `Agent "${agent.name}"` : "Agent"}: no LLM key set — running a scripted buy to demonstrate the live x402 → escrow settlement.`,
+            msg: `${agent ? `Agent "${agent.name}"` : "Agent"}: no LLM key set — running a scripted buy to demonstrate live x402 → Escrow settlement.`,
             stream: false,
           });
           await sleep(STEP_MS);
@@ -652,7 +652,7 @@ export async function GET(request: Request) {
               ? out.report.result
                 ? `Market read: ${out.report.result}`
                 : "Live report acquired."
-              : "Seller declined — no data delivered; payment held in escrow.",
+              : "Seller declined — no data delivered; payment held in Escrow.",
             stream: true,
             final: true,
           });
@@ -758,7 +758,7 @@ export async function GET(request: Request) {
                 ? JSON.stringify({ status: "delivered", report: out.report })
                 : JSON.stringify({
                     status: "not_delivered",
-                    note: "The seller declined to deliver. Your payment is held in escrow; if it is not delivered by the deadline you can file an insurance claim. You do not have the data.",
+                    note: "The seller declined to deliver. Your payment is held in Escrow; if delivery is not attested before the deadline, you can file an Insurance claim. You do not have the data.",
                   }),
             });
           }

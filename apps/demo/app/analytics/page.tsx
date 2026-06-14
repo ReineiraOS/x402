@@ -317,7 +317,7 @@ export default function AnalyticsPage() {
           <span className="eyebrow">Usage</span>
           <h1 className="page__title">Analytics</h1>
           <p className="page__lead">
-            Autonomous spend across your agents — where the money went and what is still held in escrow.
+            Autonomous spend across your agents — where the money went and what is still held in Escrow.
           </p>
         </div>
         <div className="an-filters">
@@ -393,7 +393,7 @@ export default function AnalyticsPage() {
             </div>
             <div className="an-kpi bw-card">
               <span className="an-kpi__v an-kpi__v--held">{usdc(view.heldAmt.toString())}</span>
-              <span className="an-kpi__l">held in escrow · {view.held}</span>
+              <span className="an-kpi__l">held in Escrow · {view.held}</span>
             </div>
             <div className="an-kpi bw-card">
               <span className="an-kpi__v an-kpi__v--done">{usdc(view.releasedAmt.toString())}</span>
@@ -401,7 +401,7 @@ export default function AnalyticsPage() {
             </div>
             <div className="an-kpi bw-card">
               <span className="an-kpi__v">{usdc(view.balance.toString())}</span>
-              <span className="an-kpi__l">wallet balance</span>
+              <span className="an-kpi__l">treasury balance</span>
             </div>
           </div>
 
@@ -444,7 +444,7 @@ export default function AnalyticsPage() {
                     <EChart option={donutOption(view.held, view.releasable, view.released)} height={190} />
                     <div className="an-donut__center">
                       <span className="an-donut__num">{escrowTotal}</span>
-                      <span className="an-donut__lab">escrowed</span>
+                      <span className="an-donut__lab">in Escrow</span>
                     </div>
                   </div>
                   <div className="an-legend">
