@@ -1,0 +1,35 @@
+node_modules/
+dist/
+out/
+foundry-cache/
+broadcast/
+cache/
+coverage/
+# ...but not the insurance coverage API route (the pattern above is for test reports)
+!apps/demo/app/api/coverage/
+*.tsbuildinfo
+
+# Next.js
+.next/
+next-env.d.ts
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.pk
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local notes / build-plans / orchestration harness — not part of the public deliverable
+tasks/
+
+# Vercel
+.vercel/
+
+# Local env overrides (belt-and-suspenders; .env.* above already covers these)
+.env*.local

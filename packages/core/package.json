@@ -1,0 +1,64 @@
+{
+  "name": "@reineira-os/x402-core",
+  "version": "0.0.0",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
+    },
+    "./http": {
+      "types": "./dist/http.d.ts",
+      "import": "./dist/http.js"
+    },
+    "./exact/client": {
+      "types": "./dist/exact/client.d.ts",
+      "import": "./dist/exact/client.js"
+    },
+    "./exact/escrow": {
+      "types": "./dist/exact/escrow.d.ts",
+      "import": "./dist/exact/escrow.js"
+    },
+    "./exact/verify": {
+      "types": "./dist/exact/verify.d.ts",
+      "import": "./dist/exact/verify.js"
+    },
+    "./exact/settle": {
+      "types": "./dist/exact/settle.d.ts",
+      "import": "./dist/exact/settle.js"
+    },
+    "./facilitator": {
+      "types": "./dist/facilitator.d.ts",
+      "import": "./dist/facilitator.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "viem": "^2.21.0",
+    "@reineira-os/x402-rss-shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@x402/core": "^2.14.0",
+    "@x402/evm": "^2.14.0",
+    "@x402/fetch": "^2.14.0",
+    "tsup": "^8.3.0",
+    "vitest": "^2.1.0",
+    "typescript": "^5.7.0"
+  }
+}

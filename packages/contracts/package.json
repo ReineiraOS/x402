@@ -1,0 +1,18 @@
+{
+  "name": "@reineira-os/x402-rss-contracts",
+  "version": "0.0.0",
+  "description": "Deployable RSS implementations — Delivery resolver/policy and X402 escrow receiver",
+  "license": "MIT",
+  "scripts": {
+    "build": "forge build",
+    "compile": "forge build",
+    "test": "forge test -vv",
+    "clean": "forge clean",
+    "lint": "forge fmt --check",
+    "format": "forge fmt"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "@reineira-os/rss": "workspace:*"
+  }
+}

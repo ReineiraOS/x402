@@ -1,0 +1,20 @@
+{
+  "name": "@reineira-os/rss",
+  "version": "0.0.0",
+  "description": "Reineira Settlement Standard — IConditionResolver / IUnderwriterPolicy conformance suites plus the interface-only IFundingSource (conformance roadmap)",
+  "license": "MIT",
+  "files": [
+    "contracts"
+  ],
+  "scripts": {
+    "build": "forge build",
+    "compile": "forge build",
+    "test": "forge test -vv",
+    "clean": "forge clean",
+    "lint": "forge fmt --check",
+    "format": "forge fmt"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0"
+  }
+}
