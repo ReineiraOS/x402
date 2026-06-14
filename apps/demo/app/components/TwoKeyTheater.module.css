@@ -4,56 +4,67 @@
    geometry/motion for the three-actor theater + terminal-style log.
    ════════════════════════════════════════════════════════════════ */
 
+/* The page is bound to the viewport so the console fills the slack with a DEFINITE height —
+   the log then scrolls internally instead of growing the page as lines stream in. */
+.fill {
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
 .root {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1;
+  min-height: 0;
 }
 
-/* ── Honesty legend strip (always visible) ── */
-.legend {
+/* ── Honesty key — lives inside the console as its footer bar ── */
+.log__honesty {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   flex-wrap: wrap;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 6px 16px;
+  padding: 9px 16px;
+  border-top: 1px solid var(--border-dark);
+  background: var(--surface-deep);
+  flex-shrink: 0;
 }
-.legend__cap {
-  font-size: 10.5px;
+.log__honesty-cap {
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--text-dim);
-  margin-right: 4px;
+  margin-right: 2px;
 }
-.legend__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .honest {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border-radius: var(--r-full);
-  border: 1px solid transparent;
+  align-items: baseline;
+  gap: 7px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.04em;
   white-space: nowrap;
   font-family: var(--font-mono, ui-monospace, monospace);
+}
+.honest em {
+  font-style: normal;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--text-dim);
 }
 .honest__dot {
   width: 6px;
   height: 6px;
   border-radius: var(--r-full);
   flex-shrink: 0;
+  align-self: center;
 }
 .honest--live {
   color: var(--st-live-text);
-  background: rgba(36, 196, 116, 0.1);
-  border-color: rgba(36, 196, 116, 0.25);
 }
 .honest--live .honest__dot {
   background: var(--st-live);
@@ -61,8 +72,6 @@
 .honest--staged,
 .honest--scripted {
   color: var(--st-spec-text);
-  background: rgba(243, 166, 40, 0.1);
-  border-color: rgba(243, 166, 40, 0.22);
 }
 .honest--staged .honest__dot,
 .honest--scripted .honest__dot {
@@ -70,8 +79,6 @@
 }
 .honest--deferred {
   color: var(--text-dim);
-  background: var(--tile-bg);
-  border-color: var(--border-dark);
 }
 .honest--deferred .honest__dot {
   background: var(--text-dim);
@@ -88,8 +95,10 @@
 .controls__run {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   min-height: 44px;
+  min-width: 232px;
   padding: 0 22px;
   font-size: 15px;
   font-weight: 600;
@@ -111,22 +120,65 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
-.controls__check {
+/* ── Scenario picker — replaces the false-alarm checkbox; both outcomes stay visible ── */
+.scenario {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: var(--r-btn);
+  border: 1px solid var(--border-dark);
+  background: var(--tile-bg);
+}
+.scenario__seg {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 5px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sub);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease);
+}
+.scenario__seg:hover:not(:disabled) {
+  color: var(--text-secondary);
+}
+.scenario__seg:disabled {
+  cursor: not-allowed;
+}
+.scenario__top {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-muted);
-  cursor: pointer;
-  user-select: none;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
 }
-.controls__check input {
-  accent-color: var(--st-spec);
-  cursor: pointer;
+.scenario__sub {
+  padding-left: 19px;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
 }
-.controls__check:has(input:disabled) {
-  opacity: 0.6;
-  cursor: not-allowed;
+.scenario__seg--genuine {
+  background: var(--blue-8);
+  border-color: var(--blue-25);
+  color: var(--accent-blue);
+}
+.scenario__seg--genuine .scenario__sub {
+  color: var(--accent-blue);
+}
+.scenario__seg--false {
+  background: rgba(243, 166, 40, 0.1);
+  border-color: rgba(243, 166, 40, 0.4);
+  color: var(--st-spec-text);
+}
+.scenario__seg--false .scenario__sub {
+  color: var(--st-spec-text);
 }
 .controls__hint {
   font-size: 12px;
@@ -134,6 +186,116 @@
   margin-left: auto;
   max-width: 320px;
   line-height: 1.45;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Choreography spine — the live five-beat timeline (Stake → Settle)
+   ════════════════════════════════════════════════════════════════ */
+.spine {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 20px;
+  flex-wrap: wrap;
+  row-gap: 14px;
+}
+.stage {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 9px;
+  align-items: center;
+  flex: 1;
+  min-width: 124px;
+  transition: opacity var(--dur-2) var(--ease);
+}
+.stage--pending {
+  opacity: 0.5;
+}
+.stage__chip {
+  grid-row: 1 / span 2;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-full);
+  background: var(--tile-bg);
+  border: 1px solid var(--border-dark);
+  color: var(--accent-steel);
+  transition:
+    background var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease);
+}
+.stage__label {
+  align-self: flex-end;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+  line-height: 1.1;
+  transition: color var(--dur-2) var(--ease);
+}
+.stage__sub {
+  align-self: flex-start;
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--dur-2) var(--ease);
+}
+.spine__link {
+  flex: 0 1 28px;
+  height: 2px;
+  min-width: 14px;
+  border-radius: 2px;
+  background: var(--steel-12);
+  transition: background var(--dur-2) var(--ease);
+}
+.spine__link--on {
+  background: linear-gradient(90deg, var(--blue-20), var(--steel-12));
+}
+.stage--active .stage__chip {
+  background: var(--blue-12);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  animation: beat-pulse 1.6s var(--ease) infinite;
+}
+.stage--active .stage__label,
+.stage--done .stage__label {
+  color: var(--text-primary);
+}
+.stage--active .stage__sub {
+  color: var(--accent-blue);
+}
+.stage--done .stage__chip {
+  background: var(--blue-10);
+  border-color: var(--blue-20);
+  color: var(--accent-blue);
+}
+.stage--alert .stage__chip {
+  background: rgba(243, 166, 40, 0.12);
+  border-color: rgba(243, 166, 40, 0.42);
+  color: var(--st-spec);
+}
+.stage--alert .stage__label {
+  color: var(--st-spec-text);
+}
+.stage--alert .stage__sub {
+  color: var(--st-spec-text);
+}
+@media (max-width: 720px) {
+  .spine {
+    gap: 12px 4px;
+  }
+  .stage {
+    min-width: 45%;
+  }
+  .spine__link {
+    display: none;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -155,7 +317,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 18px 18px 20px;
+  padding: 16px 16px 18px;
   border-radius: var(--radius-lg, var(--r-card));
   border: 1px solid var(--border-dark);
   background: var(--card-bg, var(--card-grad));
@@ -203,9 +365,9 @@
   min-width: 0;
 }
 .actor__name {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-primary);
 }
@@ -213,6 +375,16 @@
   font-size: 11.5px;
   color: var(--text-dim);
   line-height: 1.35;
+}
+.actor__addr {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0;
+  color: var(--accent-blue);
+  transition: color var(--dur-1) var(--ease);
+}
+.actor__addr:hover {
+  color: var(--accent-blue-hover);
 }
 .actor__body {
   display: flex;
@@ -224,7 +396,12 @@
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--text-secondary);
-  min-height: 2.6em;
+  /* fixed three-line slot — a longer/shorter live line never resizes the card */
+  height: 4.5em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
 }
 .actor__line--idle {
   color: var(--text-dim);
@@ -258,28 +435,33 @@
   color: var(--st-spec);
 }
 
-/* Verdict badge inside Guardian */
+/* Verdict badge inside Guardian — reserved slot so its arrival never resizes the card */
+.actor__badge-slot {
+  height: 28px;
+  display: flex;
+  align-items: center;
+}
 .verdict {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   align-self: flex-start;
-  padding: 7px 14px;
-  border-radius: var(--radius-button, var(--r-btn));
-  font-size: 16px;
+  padding: 5px 12px;
+  border-radius: var(--r-full);
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   animation: reveal-up var(--dur-2) var(--ease) both;
 }
 .verdict--valid {
   color: var(--st-live-text);
-  background: rgba(36, 196, 116, 0.12);
-  border: 1px solid rgba(36, 196, 116, 0.3);
+  background: rgba(36, 196, 116, 0.1);
+  border: 1px solid rgba(36, 196, 116, 0.26);
 }
 .verdict--false {
-  color: var(--st-danger-text);
-  background: rgba(229, 90, 90, 0.12);
-  border: 1px solid rgba(229, 90, 90, 0.32);
+  color: var(--st-spec-text);
+  background: rgba(243, 166, 40, 0.1);
+  border: 1px solid rgba(243, 166, 40, 0.28);
 }
 
 /* ── Vault — the hero panel ── */
@@ -296,15 +478,39 @@
 .vault__head {
   justify-content: center;
 }
+.vault__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex: 1;
+}
 .vault__bignum {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 52px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
   color: var(--text-primary);
   transition: color var(--dur-3) var(--ease);
   font-variant-numeric: tabular-nums;
+}
+.vault__bignum--skeleton {
+  width: 116px;
+  height: 36px;
+  border-radius: var(--r-btn);
+  background: linear-gradient(90deg, var(--tile-bg), var(--tile-bg-hover), var(--tile-bg));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s var(--ease) infinite;
+}
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 .vault__floor {
   display: inline-flex;
@@ -331,44 +537,50 @@
   font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0.02em;
+  white-space: nowrap;
   transition:
     color var(--dur-2) var(--ease),
     background var(--dur-2) var(--ease),
     border-color var(--dur-2) var(--ease);
 }
+/* fixed banner slot — the banner appears/disappears WITHIN it, never resizing the vault */
+.vault__banner-slot {
+  width: 100%;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .vault__banner {
   width: 100%;
-  margin-top: 2px;
   padding: 7px 12px;
   border-radius: var(--radius-button, var(--r-btn));
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
   animation: reveal-up var(--dur-2) var(--ease) both;
 }
 
-/* vault state colorways (drive number + frame + chip together) */
+/* vault state colorways — restrained: the big numeral stays neutral; state reads through a
+   quiet chip + soft border. Saturated colour is spent only on the breach beat (amber). */
 .vault--healthy {
-  border-color: rgba(36, 196, 116, 0.22);
-}
-.vault--healthy .vault__bignum {
-  color: var(--st-live-text);
+  border-color: var(--steel-25);
 }
 .vault--healthy .vault__floor-marker {
-  background: var(--st-live);
+  background: var(--accent-steel);
 }
 .vault--healthy .vault__state {
-  color: var(--st-live-text);
-  background: rgba(36, 196, 116, 0.1);
-  border: 1px solid rgba(36, 196, 116, 0.25);
+  color: var(--text-muted);
+  background: var(--tile-bg);
+  border: 1px solid var(--border-dark);
 }
 
 .vault--bonded {
   border-color: var(--blue-25);
-  box-shadow: 0 0 30px var(--blue-8);
-}
-.vault--bonded .vault__bignum {
-  color: var(--accent-blue);
 }
 .vault--bonded .vault__floor-marker {
   background: var(--accent-blue);
@@ -385,57 +597,48 @@
 }
 
 .vault--draining {
-  border-color: var(--st-spec);
-  box-shadow: 0 0 36px rgba(243, 166, 40, 0.16);
+  border-color: rgba(243, 166, 40, 0.4);
   animation: vault-shake 0.5s var(--ease);
 }
 .vault--draining .vault__bignum {
-  color: var(--st-spec);
+  color: var(--st-spec-text);
 }
 .vault--draining .vault__floor-marker {
   background: var(--st-spec);
 }
 .vault--draining .vault__state {
   color: var(--st-spec-text);
-  background: rgba(243, 166, 40, 0.12);
-  border: 1px solid rgba(243, 166, 40, 0.3);
+  background: rgba(243, 166, 40, 0.1);
+  border: 1px solid rgba(243, 166, 40, 0.28);
 }
 .vault--draining .vault__banner {
   color: var(--st-spec-text);
   background: rgba(243, 166, 40, 0.1);
-  border: 1px solid rgba(243, 166, 40, 0.28);
+  border: 1px solid rgba(243, 166, 40, 0.26);
 }
 
 .vault--paused {
-  border-color: var(--st-spec);
-  box-shadow: 0 0 40px rgba(243, 166, 40, 0.2);
-}
-.vault--paused .vault__bignum {
-  color: var(--text-primary);
+  border-color: rgba(243, 166, 40, 0.32);
 }
 .vault--paused .vault__floor-marker {
   background: var(--st-spec);
 }
 .vault--paused .vault__state {
   color: var(--st-spec-text);
-  background: rgba(243, 166, 40, 0.12);
-  border: 1px solid rgba(243, 166, 40, 0.3);
+  background: rgba(243, 166, 40, 0.1);
+  border: 1px solid rgba(243, 166, 40, 0.28);
 }
 
 .vault--safe {
-  border-color: var(--st-live);
-  box-shadow: 0 0 44px rgba(36, 196, 116, 0.22);
-}
-.vault--safe .vault__bignum {
-  color: var(--st-live-text);
+  border-color: rgba(36, 196, 116, 0.3);
 }
 .vault--safe .vault__floor-marker {
   background: var(--st-live);
 }
 .vault--safe .vault__state {
   color: var(--st-live-text);
-  background: rgba(36, 196, 116, 0.12);
-  border: 1px solid rgba(36, 196, 116, 0.3);
+  background: rgba(36, 196, 116, 0.1);
+  border: 1px solid rgba(36, 196, 116, 0.26);
 }
 
 .vault--idle .vault__bignum {
@@ -470,6 +673,8 @@
   overflow: hidden;
   padding: 0;
   background: var(--surface-base);
+  flex: 1;
+  min-height: 200px;
 }
 .log:global(.bw-card):hover {
   border-color: var(--border-dark);
@@ -520,20 +725,26 @@
 }
 
 .log__body {
-  height: 300px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 16px 18px;
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.6;
   display: flex;
   flex-direction: column;
   gap: 9px;
 }
+.log__body--empty {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
 .log__empty {
   color: var(--text-dim);
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 12.5px;
+  font-size: 13px;
 }
 .log__caret {
   color: var(--accent-blue);
@@ -606,7 +817,7 @@
   margin-left: 8px;
   padding: 1px 8px;
   border-radius: var(--r-full);
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
   vertical-align: middle;

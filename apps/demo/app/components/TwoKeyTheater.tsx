@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon } from "../../ui/Icon";
 import styles from "./TwoKeyTheater.module.css";
 
@@ -8,6 +8,7 @@ type Zone = "vault" | "sentinel" | "guardian" | "system";
 type VaultState = "idle" | "healthy" | "bonded" | "draining" | "paused" | "safe";
 type Verdict = "VALID" | "FALSE";
 type HonestLabel = "staged" | "scripted" | "ledger";
+type StageState = "pending" | "active" | "done" | "alert";
 
 type RunEvent = {
   zone?: Zone;
@@ -42,21 +43,26 @@ type VaultView = {
   recordedFloor: string | null;
 };
 
+type Milestones = { bonded: boolean; alarm: boolean; frozen: boolean; settled: boolean };
+type Addrs = { sentinel: string; guardian: string; vault: string };
+
+const EMPTY_MILESTONES: Milestones = { bonded: false, alarm: false, frozen: false, settled: false };
+
 const VAULT_COPY: Record<VaultState, { state: string; banner?: string; icon: string }> = {
   idle: { state: "awaiting run", icon: "lock" },
-  healthy: { state: "healthy · floor held", icon: "shield" },
+  healthy: { state: "above floor", icon: "shield" },
   bonded: {
-    state: "ALERT · bonded",
-    banner: "ALERT · bonded — a stake bought the right to speak",
+    state: "alarm raised",
+    banner: "a bond was staked to raise this alarm",
     icon: "bolt",
   },
   draining: {
-    state: "invariant broken",
-    banner: "invariant broken — totalAssets < floor",
+    state: "below floor",
+    banner: "balance dropped below the floor",
     icon: "alert",
   },
-  paused: { state: "PAUSED · funds safe", icon: "lock" },
-  safe: { state: "PAUSED · funds safe · exploit averted", icon: "check" },
+  paused: { state: "frozen · drain stopped", icon: "lock" },
+  safe: { state: "frozen · rest secured", icon: "check" },
 };
 
 function formatUsdc(atomic: string | null): string {
@@ -73,6 +79,10 @@ function shortTx(tx: string): string {
   return tx.length > 14 ? `${tx.slice(0, 8)}…${tx.slice(-7)}` : tx;
 }
 
+function shortAddr(a: string): string {
+  return a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
+}
+
 function TxLink({ tx, arbiscan }: { tx: string; arbiscan?: string }) {
   return (
     <a
@@ -86,6 +96,61 @@ function TxLink({ tx, arbiscan }: { tx: string; arbiscan?: string }) {
   );
 }
 
+type Stage = { key: string; icon: string; label: string; sub: string; state: StageState };
+
+// Derive the five-beat choreography spine purely from the live run state. Each milestone is set
+// by a real emitted event (bond/alert/pause/verdict/settle), so the spine lights up in lockstep
+// with the on-chain transactions rather than on a timer.
+function buildStages(
+  running: boolean,
+  ms: Milestones,
+  verdict: Verdict | null,
+  falseAlarm: boolean,
+): Stage[] {
+  const done = [ms.bonded, ms.alarm, ms.frozen, verdict !== null, ms.settled];
+  const activeIdx = running ? done.findIndex((d) => !d) : -1;
+  const at = (i: number, doneState: StageState = "done"): StageState =>
+    done[i] ? doneState : i === activeIdx ? "active" : "pending";
+  const isFalse = verdict === "FALSE";
+  return [
+    {
+      key: "stake",
+      icon: "fingerprint",
+      label: "Stake",
+      sub: ms.bonded ? "bond staked" : activeIdx === 0 ? "staking over x402…" : "stake to speak",
+      state: at(0),
+    },
+    {
+      key: "alarm",
+      icon: "bolt",
+      label: "Alarm",
+      sub: ms.alarm ? (isFalse || falseAlarm ? "false positive" : "breach committed") : "raise the alarm",
+      state: at(1),
+    },
+    {
+      key: "freeze",
+      icon: "lock",
+      label: "Freeze",
+      sub: ms.frozen ? "vault paused" : "Guardian freezes",
+      state: at(2),
+    },
+    {
+      key: "verdict",
+      icon: isFalse ? "alert" : "shield",
+      label: "Verdict",
+      sub: verdict ?? "resolver reads floor",
+      state: verdict ? (isFalse ? "alert" : "done") : activeIdx === 3 ? "active" : "pending",
+    },
+    {
+      key: "settle",
+      icon: isFalse ? "alert" : "check",
+      label: "Settle",
+      sub: ms.settled ? (verdict === "VALID" ? "bond returned" : "bond slashed") : "settle the stake",
+      state: ms.settled ? (verdict === "VALID" ? "done" : "alert") : activeIdx === 4 ? "active" : "pending",
+    },
+  ];
+}
+
 export function TwoKeyTheater() {
   const [running, setRunning] = useState(false);
   const [falseAlarm, setFalseAlarm] = useState(false);
@@ -97,10 +162,55 @@ export function TwoKeyTheater() {
   });
   const [lastZone, setLastZone] = useState<Zone | null>(null);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
+  const [milestones, setMilestones] = useState<Milestones>(EMPTY_MILESTONES);
+  const [addrs, setAddrs] = useState<Addrs | null>(null);
+  const [bootDone, setBootDone] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const idRef = useRef(0);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const snapRef = useRef<{ totalAssets: string; recordedFloor: string } | null>(null);
+
+  // Read the live vault on mount so the hero shows real on-chain numbers before the first run.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/twokey/state", { cache: "no-store" });
+        const j = (await res.json()) as {
+          configured?: boolean;
+          totalAssets?: string;
+          recordedFloor?: string;
+          healthy?: boolean;
+          paused?: boolean;
+          sentinel?: string;
+          guardian?: string;
+          vault?: string;
+        };
+        if (!active) return;
+        if (j.configured && j.totalAssets && j.recordedFloor) {
+          snapRef.current = { totalAssets: j.totalAssets, recordedFloor: j.recordedFloor };
+          setAddrs({ sentinel: j.sentinel!, guardian: j.guardian!, vault: j.vault! });
+          setVault((prev) =>
+            prev.totalAssets === null
+              ? {
+                  state: j.paused ? "paused" : j.healthy ? "healthy" : "draining",
+                  totalAssets: j.totalAssets!,
+                  recordedFloor: j.recordedFloor!,
+                }
+              : prev,
+          );
+        }
+      } catch {
+        /* leave the hero in its idle state */
+      } finally {
+        if (active) setBootDone(true);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: "smooth" });
@@ -114,8 +224,6 @@ export function TwoKeyTheater() {
   );
 
   const pushLog = useCallback((line: Omit<LogLine, "id">) => {
-    // Capture the id synchronously per call: reading idRef inside the deferred setState
-    // updater makes every batched updater see the final value → duplicate keys.
     const id = (idRef.current += 1);
     setLog((prev) => [...prev, { id, ...line }]);
   }, []);
@@ -136,10 +244,20 @@ export function TwoKeyTheater() {
       if (!zone) return;
       setLastZone(zone);
 
+      // milestones drive the choreography spine — set off real emitted beats
+      if (zone === "sentinel" && event.kind === "bond") {
+        setMilestones((m) => ({ ...m, bonded: true }));
+      } else if (zone === "sentinel" && event.kind === "alert") {
+        setMilestones((m) => ({ ...m, alarm: true }));
+      } else if (zone === "guardian" && event.kind === "paused") {
+        setMilestones((m) => ({ ...m, frozen: true }));
+      } else if (zone === "sentinel" && event.kind === "settle") {
+        setMilestones((m) => ({ ...m, settled: true }));
+      }
+
       if (zone === "vault") {
         setVault((prev) => ({
           state: event.state ?? prev.state,
-          // the "safe" frame carries no numbers — freeze the prior reading.
           totalAssets: event.totalAssets ?? prev.totalAssets,
           recordedFloor: event.recordedFloor ?? prev.recordedFloor,
         }));
@@ -177,7 +295,13 @@ export function TwoKeyTheater() {
     setLog([]);
     setVerdict(null);
     setLastZone(null);
-    setVault({ state: "idle", totalAssets: null, recordedFloor: null });
+    setMilestones(EMPTY_MILESTONES);
+    // reset to the known on-chain snapshot (not a blank dash) so the hero never flashes empty
+    setVault(
+      snapRef.current
+        ? { state: "healthy", totalAssets: snapRef.current.totalAssets, recordedFloor: snapRef.current.recordedFloor }
+        : { state: "idle", totalAssets: null, recordedFloor: null },
+    );
 
     const url = `/api/run?mode=twokey${falseAlarm ? "&falseAlarm=1" : ""}`;
     try {
@@ -214,35 +338,18 @@ export function TwoKeyTheater() {
     }
   }, [running, falseAlarm, handleEvent, pushLog]);
 
-  const vaultActive = lastZone === "vault";
   const sentinelActive = lastZone === "sentinel";
   const guardianActive = lastZone === "guardian";
+  const vaultActive = lastZone === "vault";
   const copy = VAULT_COPY[vault.state];
+  const stages = buildStages(running, milestones, verdict, falseAlarm);
   const vaultClass = `${styles.actor} ${styles.vault} ${styles[`vault--${vault.state}`] ?? ""}${
     vaultActive ? ` ${styles["actor--active"]}` : ""
   }`;
+  const showSkeleton = vault.totalAssets === null && !bootDone;
 
   return (
     <div className={styles.root}>
-      {/* Honesty legend — always visible */}
-      <div className={`${styles.legend} bw-card`}>
-        <span className={styles.legend__cap}>Honesty</span>
-        <div className={styles.legend__chips}>
-          <span className={`${styles.honest} ${styles["honest--live"]}`}>
-            <span className={styles.honest__dot} aria-hidden /> LIVE
-          </span>
-          <span className={`${styles.honest} ${styles["honest--staged"]}`}>
-            <span className={styles.honest__dot} aria-hidden /> STAGED
-          </span>
-          <span className={`${styles.honest} ${styles["honest--scripted"]}`}>
-            <span className={styles.honest__dot} aria-hidden /> SCRIPTED
-          </span>
-          <span className={`${styles.honest} ${styles["honest--deferred"]}`}>
-            <span className={styles.honest__dot} aria-hidden /> DEFERRED
-          </span>
-        </div>
-      </div>
-
       {/* Run controls */}
       <div className={`${styles.controls} bw-card`}>
         <button className={styles.controls__run} onClick={() => void run()} disabled={running}>
@@ -259,51 +366,76 @@ export function TwoKeyTheater() {
             </>
           )}
         </button>
-        <label
-          className={styles.controls__check}
-          title="Raise an alarm on a healthy vault — the verdict comes back FALSE and the bond is slashed."
-        >
-          <input
-            type="checkbox"
-            checked={falseAlarm}
-            onChange={(e) => setFalseAlarm(e.target.checked)}
+        <div className={styles.scenario} role="group" aria-label="Run scenario">
+          <button
+            type="button"
+            className={`${styles.scenario__seg}${!falseAlarm ? ` ${styles["scenario__seg--genuine"]}` : ""}`}
+            onClick={() => setFalseAlarm(false)}
             disabled={running}
-          />
-          False alarm
-        </label>
+            aria-pressed={!falseAlarm}
+          >
+            <span className={styles.scenario__top}>
+              <Icon name="bolt" size={13} stroke={2.2} /> Genuine alarm
+            </span>
+            <span className={styles.scenario__sub}>bond returned</span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.scenario__seg}${falseAlarm ? ` ${styles["scenario__seg--false"]}` : ""}`}
+            onClick={() => setFalseAlarm(true)}
+            disabled={running}
+            aria-pressed={falseAlarm}
+          >
+            <span className={styles.scenario__top}>
+              <Icon name="alert" size={13} stroke={2.2} /> False alarm
+            </span>
+            <span className={styles.scenario__sub}>bond slashed</span>
+          </button>
+        </div>
         <span className={styles.controls__hint}>
           Two keys, neither acts alone — a Sentinel stakes to speak, a Guardian freezes the vault.
         </span>
       </div>
 
-      {/* Theater: Sentinel · Vault · Guardian */}
-      <div className={styles.theater}>
-        {/* Sentinel */}
-        <div
-          className={`${styles.actor} ${styles["actor--sentinel"]}${sentinelActive ? ` ${styles["actor--active"]}` : ""}`}
-        >
-          <div className={styles.actor__head}>
-            <span className={styles.actor__chip}>
-              <Icon name="fingerprint" size={19} stroke={2.4} />
-            </span>
-            <div className={styles.actor__id}>
-              <span className={styles.actor__name}>Sentinel</span>
-              <span className={styles.actor__role}>
-                watches the vault · stakes a bond to raise an alarm
+      {/* Choreography spine — the live five-beat timeline */}
+      <div className={`${styles.spine} bw-card`} role="list" aria-label="Two-Key Halt choreography">
+        {stages.map((s, i) => (
+          <Fragment key={s.key}>
+            {i > 0 ? (
+              <span
+                className={`${styles.spine__link}${
+                  stages[i - 1]!.state === "done" || stages[i - 1]!.state === "alert"
+                    ? ` ${styles["spine__link--on"]}`
+                    : ""
+                }`}
+                aria-hidden
+              />
+            ) : null}
+            <div className={`${styles.stage} ${styles[`stage--${s.state}`]}`} role="listitem">
+              <span className={styles.stage__chip}>
+                <Icon name={s.icon} size={15} stroke={2.2} />
               </span>
+              <span className={styles.stage__label}>{s.label}</span>
+              <span className={styles.stage__sub}>{s.sub}</span>
             </div>
-          </div>
-          <div className={styles.actor__body}>
-            <ZoneLine
-              active={sentinelActive}
-              line={lastSentinelLine(log)}
-              idle="Idle — to speak, it must stake a bond over x402."
-            />
-          </div>
-          <span className={styles.actor__sub}>stakes to speak</span>
-        </div>
+          </Fragment>
+        ))}
+      </div>
 
-        {/* Vault — hero */}
+      {/* Theater: Sentinel key · Vault · Guardian key */}
+      <div className={styles.theater}>
+        <KeyCard
+          side="sentinel"
+          active={sentinelActive}
+          name="Sentinel"
+          role="stakes a bond to speak"
+          icon="fingerprint"
+          addr={addrs?.sentinel}
+          line={lastZoneLine(log, "sentinel")}
+          idle="Idle — to speak, it must stake a bond over x402."
+        />
+
+        {/* Vault — the protected hero */}
         <div className={vaultClass}>
           <div className={`${styles.actor__head} ${styles.vault__head}`}>
             <span className={styles.actor__chip}>
@@ -311,50 +443,57 @@ export function TwoKeyTheater() {
             </span>
             <div className={styles.actor__id}>
               <span className={styles.actor__name}>Vault</span>
-              <span className={styles.actor__role}>protected object · totalAssets ≥ floor</span>
+              {addrs?.vault ? (
+                <a
+                  className={styles.actor__addr}
+                  href={`https://sepolia.arbiscan.io/address/${addrs.vault}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {shortAddr(addrs.vault)} ↗
+                </a>
+              ) : (
+                <span className={styles.actor__role}>protected object · totalAssets ≥ floor</span>
+              )}
             </div>
           </div>
-          <div className={styles.actor__body} style={{ alignItems: "center", gap: 12 }}>
-            <span className={styles.vault__bignum}>{formatUsdc(vault.totalAssets)}</span>
+          <div className={styles.vault__center}>
+            {showSkeleton ? (
+              <span className={`${styles.vault__bignum} ${styles["vault__bignum--skeleton"]}`} aria-hidden />
+            ) : (
+              <span className={styles.vault__bignum}>{formatUsdc(vault.totalAssets)}</span>
+            )}
             <span className={styles.vault__floor}>
               <span className={styles["vault__floor-marker"]} aria-hidden /> floor{" "}
               {formatUsdc(vault.recordedFloor)}
             </span>
             <span className={styles.vault__state}>{copy.state}</span>
-            {copy.banner ? <span className={styles.vault__banner}>{copy.banner}</span> : null}
+            <span className={styles["vault__banner-slot"]}>
+              {copy.banner ? <span className={styles.vault__banner}>{copy.banner}</span> : null}
+            </span>
           </div>
         </div>
 
-        {/* Guardian */}
-        <div
-          className={`${styles.actor} ${styles["actor--guardian"]}${guardianActive ? ` ${styles["actor--active"]}` : ""}`}
-        >
-          <div className={styles.actor__head}>
-            <span className={styles.actor__chip}>
-              <Icon name={verdict === "VALID" ? "check" : "shield"} size={19} stroke={2.4} />
-            </span>
-            <div className={styles.actor__id}>
-              <span className={styles.actor__name}>Guardian</span>
-              <span className={styles.actor__role}>can pause the vault · cannot move funds</span>
-            </div>
-          </div>
-          <div className={styles.actor__body}>
-            {verdict ? (
+        <KeyCard
+          side="guardian"
+          active={guardianActive}
+          name="Guardian"
+          role="pauses · cannot move funds"
+          icon={verdict === "VALID" ? "check" : "shield"}
+          addr={addrs?.guardian}
+          line={lastZoneLine(log, "guardian")}
+          idle="Trusts the bond — never talks to the Sentinel."
+          badge={
+            verdict ? (
               <span
                 className={`${styles.verdict} ${verdict === "VALID" ? styles["verdict--valid"] : styles["verdict--false"]}`}
               >
-                <Icon name={verdict === "VALID" ? "check" : "alert"} size={16} stroke={2.4} />
-                {verdict === "VALID" ? "VALID" : "FALSE"}
+                <Icon name={verdict === "VALID" ? "check" : "alert"} size={15} stroke={2.4} />
+                {verdict}
               </span>
-            ) : null}
-            <ZoneLine
-              active={guardianActive}
-              line={lastGuardianLine(log)}
-              idle="Trusts the bond — never talks to the Sentinel."
-            />
-          </div>
-          <span className={styles.actor__sub}>can pause, cannot move funds</span>
-        </div>
+            ) : null
+          }
+        />
       </div>
 
       {/* Event log — terminal */}
@@ -378,7 +517,10 @@ export function TwoKeyTheater() {
             </span>
           ) : null}
         </div>
-        <div className={`${styles.log__body} thin-scroll`} ref={bodyRef}>
+        <div
+          className={`${styles.log__body} thin-scroll${log.length === 0 ? ` ${styles["log__body--empty"]}` : ""}`}
+          ref={bodyRef}
+        >
           {log.length === 0 ? (
             <span className={styles.log__empty}>
               <span className={styles.log__caret}>❯</span> awaiting run — press{" "}
@@ -388,7 +530,79 @@ export function TwoKeyTheater() {
             log.map((line) => <LogRow key={line.id} line={line} />)
           )}
         </div>
+        {/* Honesty key — the console's footer bar */}
+        <div className={styles.log__honesty}>
+          <span className={styles["log__honesty-cap"]}>Honesty</span>
+          <span className={`${styles.honest} ${styles["honest--live"]}`}>
+            <span className={styles.honest__dot} aria-hidden /> LIVE
+            <em>bond · pause · verdict · settle</em>
+          </span>
+          <span className={`${styles.honest} ${styles["honest--staged"]}`}>
+            <span className={styles.honest__dot} aria-hidden /> STAGED
+            <em>attacker drain · detection</em>
+          </span>
+          <span className={`${styles.honest} ${styles["honest--deferred"]}`}>
+            <span className={styles.honest__dot} aria-hidden /> DEFERRED
+            <em>funded bounty pool</em>
+          </span>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function KeyCard({
+  side,
+  active,
+  name,
+  role,
+  icon,
+  addr,
+  line,
+  idle,
+  badge,
+}: {
+  side: "sentinel" | "guardian";
+  active: boolean;
+  name: string;
+  role: string;
+  icon: string;
+  addr?: string;
+  line: LogLine | null;
+  idle: string;
+  badge?: ReactNode;
+}) {
+  return (
+    <div
+      className={`${styles.actor} ${styles[`actor--${side}`]}${active ? ` ${styles["actor--active"]}` : ""}`}
+    >
+      <div className={styles.actor__head}>
+        <span className={styles.actor__chip}>
+          <Icon name={icon} size={18} stroke={2.4} />
+        </span>
+        <div className={styles.actor__id}>
+          <span className={styles.actor__name}>{name}</span>
+          {addr ? (
+            <a
+              className={styles.actor__addr}
+              href={`https://sepolia.arbiscan.io/address/${addr}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {shortAddr(addr)} ↗
+            </a>
+          ) : (
+            <span className={styles.actor__addr}>—</span>
+          )}
+        </div>
+      </div>
+      {side === "guardian" ? (
+        <div className={styles["actor__badge-slot"]}>{badge}</div>
+      ) : null}
+      <div className={styles.actor__body}>
+        <ZoneLine active={active} line={line} idle={idle} />
+      </div>
+      <span className={styles.actor__sub}>{role}</span>
     </div>
   );
 }
@@ -434,16 +648,9 @@ function ZoneLine({ active, line, idle }: { active: boolean; line: LogLine | nul
   );
 }
 
-function lastSentinelLine(log: LogLine[]): LogLine | null {
+function lastZoneLine(log: LogLine[], zone: Zone): LogLine | null {
   for (let i = log.length - 1; i >= 0; i -= 1) {
-    if (log[i]!.zone === "sentinel") return log[i]!;
-  }
-  return null;
-}
-
-function lastGuardianLine(log: LogLine[]): LogLine | null {
-  for (let i = log.length - 1; i >= 0; i -= 1) {
-    if (log[i]!.zone === "guardian") return log[i]!;
+    if (log[i]!.zone === zone) return log[i]!;
   }
   return null;
 }

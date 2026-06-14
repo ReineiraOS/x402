@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { TwoKeyTheater } from "../components/TwoKeyTheater";
+import styles from "../components/TwoKeyTheater.module.css";
 
 export const metadata: Metadata = {
   title: "The Two-Key Halt · ReineiraOS",
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function TwoKeyPage() {
   return (
-    <div className="container page">
+    <div className={`container page ${styles.fill}`}>
       <div className="page__head">
         <div>
           <span className="eyebrow">Portal showcase</span>

@@ -76,11 +76,12 @@ const resolverAbi = [
 
 const erc20Abi = [
   { type: "function", name: "approve", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }], outputs: [{ type: "bool" }] },
+  { type: "function", name: "transfer", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }], outputs: [{ type: "bool" }] },
   { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
 ] as const;
 
-const BOND_ATOMIC = 1_000_000n; // 1 USDC bond
-const DRAIN_ATOMIC = 600_000n;
+const BOND_ATOMIC = 100_000n; // 0.1 USDC — a symbolic stake; keeps repeated demo runs cheap
+const DRAIN_ATOMIC = 100_000n; // a small first-grab — the floor trips immediately, the freeze stops the rest
 const arbiscan = (tx: string) => `https://sepolia.arbiscan.io/tx/${tx}`;
 const fmt = (atomic: bigint) => `${(Number(atomic) / 1e6).toFixed(2)} USDC`;
 const STEP_MS = 900;
@@ -112,6 +113,35 @@ async function vaultState(cfg: TwoKeyConfig, read: <T>(p: { address: `0x${string
     read<boolean>({ address: cfg.vault, abi: vaultAbi, functionName: "paused" }),
   ]);
   return { totalAssets, floor, healthy, paused };
+}
+
+export interface VaultSnapshot {
+  totalAssets: string;
+  recordedFloor: string;
+  healthy: boolean;
+  paused: boolean;
+  sentinel: `0x${string}`;
+  guardian: `0x${string}`;
+  vault: `0x${string}`;
+}
+
+// A live read of the protected vault for the idle (pre-run) page — so the hero shows real
+// on-chain numbers immediately instead of a placeholder dash. Returns null when the Two-Key
+// env is not configured.
+export async function readVaultSnapshot(): Promise<VaultSnapshot | null> {
+  const cfg = getTwoKeyConfig();
+  if (!cfg) return null;
+  const ctx = clients(cfg);
+  const v = await vaultState(cfg, ctx.read);
+  return {
+    totalAssets: v.totalAssets.toString(),
+    recordedFloor: v.floor.toString(),
+    healthy: v.healthy,
+    paused: v.paused,
+    sentinel: ctx.sentinel.address,
+    guardian: ctx.guardian.address,
+    vault: cfg.vault,
+  };
 }
 
 // Post the Sentinel's bond over the SAME x402 path the data-buy hero uses:
@@ -187,8 +217,14 @@ export async function runTwoKeyHalt(args: {
   let v = await vaultState(cfg, ctx.read);
   if (v.paused) await ctx.send(ctx.guardian, { address: cfg.vault, abi: vaultAbi, functionName: "unpause" });
   if (v.totalAssets < v.floor) await ctx.send(ctx.backend, { address: cfg.vault, abi: vaultAbi, functionName: "deposit", args: [v.floor - v.totalAssets] });
+  // Keep the Sentinel solvent: a false-alarm run permanently locks its 1 USDC bond, so when it can
+  // no longer afford to stake, top it up from the backend funder (idempotent demo housekeeping).
+  const sentinelUsdc = await ctx.read<bigint>({ address: cfg.usdc, abi: erc20Abi, functionName: "balanceOf", args: [ctx.sentinel.address] });
+  if (sentinelUsdc < BOND_ATOMIC) {
+    await ctx.send(ctx.backend, { address: cfg.usdc, abi: erc20Abi, functionName: "transfer", args: [ctx.sentinel.address, BOND_ATOMIC * 3n - sentinelUsdc] });
+  }
   v = await vaultState(cfg, ctx.read);
-  emit({ zone: "vault", kind: "vault", state: "healthy", totalAssets: v.totalAssets.toString(), recordedFloor: v.floor.toString(), msg: "Vault healthy · floor held" });
+  emit({ zone: "vault", kind: "vault", state: "healthy", totalAssets: v.totalAssets.toString(), recordedFloor: v.floor.toString(), msg: "Vault healthy · balance above its floor" });
   emit({ zone: "system", msg: "One vault, two independent agents: a Sentinel that can raise an alarm, a Guardian that can freeze. Neither can do the other's job." });
   await sleep(STEP_MS);
 
@@ -215,7 +251,7 @@ export async function runTwoKeyHalt(args: {
     tx: bond.tx,
     arbiscan: arbiscan(bond.tx),
   });
-  emit({ zone: "vault", kind: "vault", state: "bonded", totalAssets: v.totalAssets.toString(), recordedFloor: v.floor.toString(), msg: "ALERT · bonded" });
+  emit({ zone: "vault", kind: "vault", state: "bonded", totalAssets: v.totalAssets.toString(), recordedFloor: v.floor.toString(), msg: "alarm raised · bond staked" });
   await sleep(STEP_MS);
 
   if (!forceFalseAlarm) {
@@ -224,7 +260,7 @@ export async function runTwoKeyHalt(args: {
     const drained = await ctx.send(ctx.backend, { address: cfg.vault, abi: vaultAbi, functionName: "demoDrain", args: [DRAIN_ATOMIC] });
     txs.stagedDrain = drained.hash;
     v = await vaultState(cfg, ctx.read);
-    emit({ zone: "vault", kind: "vault", state: "draining", totalAssets: v.totalAssets.toString(), recordedFloor: v.floor.toString(), msg: "invariant broken — totalAssets < floor", tx: drained.hash, arbiscan: arbiscan(drained.hash) });
+    emit({ zone: "vault", kind: "vault", state: "draining", totalAssets: v.totalAssets.toString(), recordedFloor: v.floor.toString(), msg: "balance fell below the floor — the breach is real", tx: drained.hash, arbiscan: arbiscan(drained.hash) });
     await sleep(STEP_MS);
     // The Sentinel commits the breach on-chain (latched), so the verdict can't be undone by a
     // restore/re-deposit racing the redeem. The DECISION to alarm is scripted; the proof is real.
@@ -242,7 +278,7 @@ export async function runTwoKeyHalt(args: {
   txs.guardianPause = paused.hash;
   v = await vaultState(cfg, ctx.read);
   emit({ zone: "guardian", kind: "paused", msg: "Guardian sees the bonded alert and pauses the vault — it never spoke to the Sentinel, it trusted the bond.", tx: paused.hash, arbiscan: arbiscan(paused.hash) });
-  emit({ zone: "vault", kind: "vault", state: "paused", totalAssets: v.totalAssets.toString(), recordedFloor: v.floor.toString(), msg: "PAUSED · funds safe" });
+  emit({ zone: "vault", kind: "vault", state: "paused", totalAssets: v.totalAssets.toString(), recordedFloor: v.floor.toString(), msg: "frozen — the Guardian blocks any further drain" });
   await sleep(STEP_MS);
 
   // STEP 4 — trustless verdict: the resolver reads the real on-chain flag.
@@ -262,7 +298,7 @@ export async function runTwoKeyHalt(args: {
       tx: redeemed.hash,
       arbiscan: arbiscan(redeemed.hash),
     });
-    emit({ zone: "vault", kind: "vault", state: "safe", msg: "PAUSED · funds safe · exploit averted" });
+    emit({ zone: "vault", kind: "vault", state: "safe", msg: "frozen — drain stopped; the rest of the vault is safe" });
     // Restore for the next run.
     await ctx.send(ctx.guardian, { address: cfg.vault, abi: vaultAbi, functionName: "unpause" });
     await ctx.send(ctx.backend, { address: cfg.vault, abi: vaultAbi, functionName: "deposit", args: [DRAIN_ATOMIC] });
