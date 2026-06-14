@@ -219,7 +219,7 @@ function PurchaseDetail({
           {record.coverage ? (
             <p className="pd__cov-note">
               {record.coverage.status === "active"
-                ? "Delivery coverage is live on-chain via the underwriter pool. If the seller breaches delivery (no attestation past the deadline), the buyer claims a payout from the pool. Premium is zero on testnet."
+                ? "Delivery coverage is live on-chain via the Insurance pool. If the seller breaches delivery (no attestation past the deadline), the buyer claims a payout from the pool. Premium is zero on testnet."
                 : record.coverage.status === "pending-setup"
                   ? `Coverage is wired but pending a one-time protocol-owner setup before it can be purchased on-chain. ${record.coverage.note ?? ""}`
                   : `Coverage could not be attached. ${record.coverage.note ?? ""}`}

@@ -131,8 +131,8 @@ export default function NewAgentPage() {
           <div className="wizard__section">
             <h2 className="wizard__title">Plugins</h2>
             <p className="wizard__hint">
-              Condition resolvers from the Portal registry gate how the agent&apos;s payments are
-              released. The TimeLock resolver is the mandatory anti-stranding default.
+              Gates from the Portal registry verify how the agent&apos;s payments release.
+              The TimeLock Gate is the mandatory anti-stranding default.
             </p>
             <div className="plugin-list">
               {plugins.map((plugin) => {

@@ -173,7 +173,7 @@ export default function EditAgentPage() {
         <div className="wizard__section edit__section">
           <h2 className="wizard__title">Plugins</h2>
           <p className="wizard__hint">
-            Condition resolvers gate how this agent&apos;s payments release. TimeLock is the mandatory
+            Gates verify how this agent&apos;s payments release. The TimeLock Gate is the mandatory
             anti-stranding default.
           </p>
           <div className="plugin-list">

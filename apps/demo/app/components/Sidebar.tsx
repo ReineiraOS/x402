@@ -24,7 +24,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
       <div className="side-nav__inner thin-scroll">
         <div className="side-nav__head">
           <div className="side-nav__top">
-            <Link href="/" className="side-nav__brand" aria-label="Payment Agents — home">
+            <Link href="/" className="side-nav__brand" aria-label="Agentic Payments — home">
               <Wordmark size={26} />
             </Link>
             {onToggle ? (
@@ -34,7 +34,7 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
             ) : null}
           </div>
           <span className="side-nav__app">
-            Payment <span>Agents</span>
+            Agentic <span>Payments</span>
           </span>
         </div>
 

@@ -32,8 +32,8 @@ export default function PluginsPage() {
           <span className="eyebrow">Portal registry</span>
           <h1 className="page__title">Plugins</h1>
           <p className="page__lead">
-            Condition resolvers and underwriter policies decide how an agent&apos;s escrowed payment
-            releases. Attach them when you create or edit an agent.
+            Gates verify release conditions and Insurance covers outcomes — together they decide how
+            an agent&apos;s escrowed payment releases. Attach them when you create or edit an agent.
           </p>
         </div>
       </div>

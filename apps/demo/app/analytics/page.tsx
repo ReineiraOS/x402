@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { EChartsOption } from "echarts";
 import { EChart } from "../components/EChart";
 import { usdc, type ClientAgent, type SpendRecord } from "../components/agentTypes";
@@ -216,6 +216,8 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [agentFilter, setAgentFilter] = useState<string>("all");
   const [range, setRange] = useState<Range>("7d");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -231,6 +233,16 @@ export default function AnalyticsPage() {
     return () => {
       active = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
   const view = useMemo(() => {
@@ -309,14 +321,46 @@ export default function AnalyticsPage() {
           </p>
         </div>
         <div className="an-filters">
-          <select className="an-select" value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)}>
-            <option value="all">All agents</option>
-            {agents.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
+          <div className={`an-dd${filterOpen ? " open" : ""}`} ref={filterRef}>
+            <button
+              type="button"
+              className="an-dd__trigger"
+              onClick={() => setFilterOpen((o) => !o)}
+              aria-haspopup="listbox"
+              aria-expanded={filterOpen}
+            >
+              {agentFilter === "all"
+                ? "All agents"
+                : agents.find((a) => a.id === agentFilter)?.name ?? "All agents"}
+            </button>
+            <div className="an-dd__menu" role="listbox">
+              <div
+                className={`an-dd__item${agentFilter === "all" ? " active" : ""}`}
+                role="option"
+                aria-selected={agentFilter === "all"}
+                onClick={() => {
+                  setAgentFilter("all");
+                  setFilterOpen(false);
+                }}
+              >
+                All agents
+              </div>
+              {agents.map((a) => (
+                <div
+                  key={a.id}
+                  className={`an-dd__item${agentFilter === a.id ? " active" : ""}`}
+                  role="option"
+                  aria-selected={agentFilter === a.id}
+                  onClick={() => {
+                    setAgentFilter(a.id);
+                    setFilterOpen(false);
+                  }}
+                >
+                  {a.name}
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="an-range" role="tablist">
             {RANGES.map((r) => (
               <button
