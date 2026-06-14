@@ -260,7 +260,7 @@ export function TwoKeyTheater() {
         <div className={`${styles.actor} ${styles["actor--sentinel"]}${sentinelActive ? ` ${styles["actor--active"]}` : ""}`}>
           <div className={styles.actor__head}>
             <span className={styles.actor__chip}>
-              <Icon name="fingerprint" size={19} stroke={1.8} />
+              <Icon name="fingerprint" size={19} stroke={2.4} />
             </span>
             <div className={styles.actor__id}>
               <span className={styles.actor__name}>Sentinel</span>
@@ -281,7 +281,7 @@ export function TwoKeyTheater() {
         <div className={vaultClass}>
           <div className={`${styles.actor__head} ${styles.vault__head}`}>
             <span className={styles.actor__chip}>
-              <Icon name={copy.icon} size={19} stroke={1.8} />
+              <Icon name={copy.icon} size={19} stroke={2.4} />
             </span>
             <div className={styles.actor__id}>
               <span className={styles.actor__name}>Vault</span>
@@ -302,7 +302,7 @@ export function TwoKeyTheater() {
         <div className={`${styles.actor} ${styles["actor--guardian"]}${guardianActive ? ` ${styles["actor--active"]}` : ""}`}>
           <div className={styles.actor__head}>
             <span className={styles.actor__chip}>
-              <Icon name={verdict === "VALID" ? "check" : "shield"} size={19} stroke={1.8} />
+              <Icon name={verdict === "VALID" ? "check" : "shield"} size={19} stroke={2.4} />
             </span>
             <div className={styles.actor__id}>
               <span className={styles.actor__name}>Guardian</span>
