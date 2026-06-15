@@ -17,6 +17,7 @@ const GENERAL: NavItem[] = [
 
 const SHOWCASES: NavItem[] = [
   { href: "/two-key", label: "Two-Key Halt", icon: "lock", match: (p) => p.startsWith("/two-key") },
+  { href: "/incident-response", label: "Incident Response", icon: "alert", match: (p) => p.startsWith("/incident-response") },
 ];
 
 const NAV_GROUPS: { cap: string; items: NavItem[] }[] = [

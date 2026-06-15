@@ -31,6 +31,7 @@ import { attachCoverage } from "../../../lib/coverage";
 import { attestAndRedeem, getSellerEscrowConfig } from "../../../lib/sellerEscrow";
 import { runSellerAgent } from "../../../lib/sellerAgent";
 import { runTwoKeyHalt } from "../../../lib/twoKey";
+import { runIncidentResponse } from "../../../lib/incident";
 
 const COVERAGE_PLUGIN_ID = "delivery-coverage-policy";
 
@@ -646,6 +647,12 @@ export async function GET(request: Request) {
         // choreography, every step a real Arbitrum Sepolia tx.
         if (mode === "twokey") {
           await runTwoKeyHalt({ emit, forceFalseAlarm: falseAlarm });
+          emit({ done: true });
+          return;
+        }
+        if (mode === "incident") {
+          const reportId = url.searchParams.get("report");
+          await runIncidentResponse({ emit, reportId, apiKey: process.env.ANTHROPIC_API_KEY });
           emit({ done: true });
           return;
         }
