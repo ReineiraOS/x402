@@ -2,6 +2,7 @@
   "name": "@reineira-os/x402-rss-monorepo",
   "version": "0.0.0",
   "private": true,
+  "packageManager": "pnpm@10.30.3",
   "description": "Reineira Settlement Standard (RSS) + x402 insured-settlement adapter",
   "license": "MIT",
   "engines": {
