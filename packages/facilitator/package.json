@@ -1,9 +1,21 @@
 {
   "name": "@reineira-os/x402-facilitator",
   "version": "0.0.0",
+  "description": "Self-hostable x402 facilitator (verify/settle) for the x402-rss adapter",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ReineiraOS/x402.git",
+    "directory": "packages/facilitator"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "start": "node dist/server.js",
