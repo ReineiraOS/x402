@@ -1,8 +1,8 @@
-# x402-rss
+# x402
 
 **Insured, FHE-confidential x402 settlement on the Reineira Settlement Standard.**
 
-`x402-rss` routes an [x402](https://x402.org) HTTP-402 payment into a settlement that is
+`@reineira-os/x402` routes an [x402](https://x402.org) HTTP-402 payment into a settlement that is
 escrow-backed, condition-gated, optionally covered by an insurance policy, and — on the confidential
 profile — **encrypted on-chain**: the settled amount, coverage, and refund are `euint64` ciphertext
 that only the buyer or seller can decrypt via a [Fhenix](https://www.fhenix.io) permit. It is all
@@ -12,7 +12,7 @@ expressed against an open conformance standard rather than a single hardcoded co
 > Syndication"). A contract is "RSS-conformant" when it implements the documented semantics of
 > `IConditionResolver`, `IUnderwriterPolicy`, or `IFundingSource` — or their confidential variants.
 
-> **Status: Arbitrum Sepolia testnet, pre-1.0.** Packages publish at `0.1.0`; the APIs may still
+> **Status: Arbitrum Sepolia testnet, pre-1.0.** Packages publish at `0.1.x`; the APIs may still
 > evolve. The confidential settlement stack is deployed on Arbitrum Sepolia and the
 > encrypt → on-chain → decrypt round-trip is proven by a live test. Insurance-pool economics are
 > demonstration-grade. See [Scope and honesty](#scope-and-honesty).
@@ -20,7 +20,7 @@ expressed against an open conformance standard rather than a single hardcoded co
 ## Why
 
 x402 is pay-first: an agent pays before it receives anything, so counterparty risk is inherent.
-`x402-rss` makes that payment land in a settlement where a missed delivery deadline can trigger a
+`@reineira-os/x402` makes that payment land in a settlement where a missed delivery deadline can trigger a
 **confidential refund** from an insurance pool — instead of the payer simply eating the loss. The
 payment wire (EIP-3009, plaintext value) is unchanged; confidentiality is a property of the
 _settlement target_, not the payment scheme, so the x402 client and facilitator stay standard.

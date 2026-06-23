@@ -32,18 +32,18 @@ export function createX402RssFetch(opts: CreateX402RssFetchOptions): typeof fetc
     );
     if (!chosen) {
       throw new Error(
-        "x402-rss: no acceptable payment requirements (exact / eip155:421614 / USDC)",
+        "x402: no acceptable payment requirements (exact / eip155:421614 / USDC)",
       );
     }
     if (!/^[0-9]+$/.test(chosen.amount)) {
-      throw new Error("x402-rss: malformed payment amount");
+      throw new Error("x402: malformed payment amount");
     }
     const amount = BigInt(chosen.amount);
     if (amount <= 0n) {
-      throw new Error("x402-rss: non-positive payment amount");
+      throw new Error("x402: non-positive payment amount");
     }
     if (amount > maxValue) {
-      throw new Error("x402-rss: amount exceeds maxValue");
+      throw new Error("x402: amount exceeds maxValue");
     }
     return chosen;
   };
