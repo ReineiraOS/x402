@@ -617,6 +617,18 @@ input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-i
 .pay__step--active .pay__mark { color: var(--accent-blue); }
 .pay__step-label em { color: var(--text-dim); font-style: normal; }
 
+/* ── Confidential (FHE) ciphertext value chip + reveal ── */
+.term__confidential input { accent-color: var(--accent-steel); }
+.pay__cipher { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.pay__cipher-chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: var(--r-full); font-size: 11.5px; color: var(--accent-steel); background: rgba(109, 142, 186, 0.1); border: 1px solid var(--steel-25); }
+.pay__cipher-chip em { font-style: normal; color: var(--text-dim); font-size: 10.5px; }
+.pay__reveal { display: inline-flex; align-items: center; min-height: 22px; padding: 0 10px; font-size: 11.5px; font-weight: 600; color: var(--accent-steel); background: transparent; border: 1px solid var(--steel-25); border-radius: var(--r-full); cursor: pointer; transition: color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease); }
+.pay__reveal:hover:not(:disabled) { color: var(--accent-steel-hover); border-color: var(--accent-steel-hover); }
+.pay__reveal:disabled { opacity: 0.6; cursor: not-allowed; }
+.pay__cipher-cap { font-size: 10.5px; color: var(--text-dim); font-family: var(--font-sans); }
+.pay__v--revealed { display: inline-flex; align-items: baseline; gap: 8px; color: var(--st-live-text); }
+.pay__cipher-note { font-size: 10.5px; font-style: normal; color: var(--text-dim); font-family: var(--font-sans); }
+
 /* ── Workspace header (redesigned: identity · balance · actions) ── */
 .ws__avatar { width: 38px; height: 38px; border-radius: var(--r-sub); flex-shrink: 0; box-shadow: inset 0 0 0 1px var(--white-8); }
 .ws__id-sub { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }

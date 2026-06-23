@@ -327,7 +327,8 @@ export default function AnalyticsPage() {
           <span className="eyebrow">Usage</span>
           <h1 className="page__title">Analytics</h1>
           <p className="page__lead">
-            Autonomous spend across your agents — where the money went and what is still held in Escrow.
+            Autonomous spend across your agents — where the money went and what is still held in
+            Escrow.
           </p>
         </div>
         <div className="an-filters">
@@ -341,7 +342,7 @@ export default function AnalyticsPage() {
             >
               {agentFilter === "all"
                 ? "All agents"
-                : agents.find((a) => a.id === agentFilter)?.name ?? "All agents"}
+                : (agents.find((a) => a.id === agentFilter)?.name ?? "All agents")}
             </button>
             <div className="an-dd__menu" role="listbox">
               <div
@@ -399,7 +400,9 @@ export default function AnalyticsPage() {
 
       {loading ? (
         <div className="page__empty">
-          <span className="spin" aria-hidden>◠</span>
+          <span className="spin" aria-hidden>
+            ◠
+          </span>
           loading analytics…
         </div>
       ) : (
@@ -430,7 +433,9 @@ export default function AnalyticsPage() {
           {view.flats.length === 0 ? (
             <div className="page__empty bw-card">
               <p>No purchases in this range.</p>
-              <span className="agents__muted">Widen the time range or run a deal to populate analytics.</span>
+              <span className="agents__muted">
+                Widen the time range or run a deal to populate analytics.
+              </span>
             </div>
           ) : (
             <div className="an-grid">
@@ -463,7 +468,10 @@ export default function AnalyticsPage() {
                 </div>
                 <div className="an-donut">
                   <div className="an-donut__chart">
-                    <EChart option={donutOption(view.held, view.releasable, view.released)} height={190} />
+                    <EChart
+                      option={donutOption(view.held, view.releasable, view.released)}
+                      height={190}
+                    />
                     <div className="an-donut__center">
                       <span className="an-donut__num">{escrowTotal}</span>
                       <span className="an-donut__lab">in Escrow</span>
@@ -471,13 +479,16 @@ export default function AnalyticsPage() {
                   </div>
                   <div className="an-legend">
                     <span className="an-legend__row">
-                      <span className="an-legend__dot" style={{ background: C_BLUE }} /> held <b>{view.held}</b>
+                      <span className="an-legend__dot" style={{ background: C_BLUE }} /> held{" "}
+                      <b>{view.held}</b>
                     </span>
                     <span className="an-legend__row">
-                      <span className="an-legend__dot" style={{ background: C_GREEN }} /> releasable <b>{view.releasable}</b>
+                      <span className="an-legend__dot" style={{ background: C_GREEN }} /> releasable{" "}
+                      <b>{view.releasable}</b>
                     </span>
                     <span className="an-legend__row">
-                      <span className="an-legend__dot" style={{ background: C_TEAL }} /> released <b>{view.released}</b>
+                      <span className="an-legend__dot" style={{ background: C_TEAL }} /> released{" "}
+                      <b>{view.released}</b>
                     </span>
                   </div>
                 </div>

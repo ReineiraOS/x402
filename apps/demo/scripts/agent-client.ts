@@ -16,7 +16,9 @@ async function main() {
   const account = privateKeyToAccount(BUYER_PRIVATE_KEY);
   const fetchPaid = createX402RssFetch({ account });
 
-  console.log(`[buyer-agent] GET ${RESOURCE_URL} (x402 v${X402.version}, payer ${account.address})`);
+  console.log(
+    `[buyer-agent] GET ${RESOURCE_URL} (x402 v${X402.version}, payer ${account.address})`,
+  );
   const res = await fetchPaid(RESOURCE_URL);
 
   const body = await res.json();

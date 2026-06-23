@@ -3,7 +3,7 @@
    authored for dark surfaces; the `.brand-logo` class (tokens.css) darkens it just
    enough to stay legible on the light theme and leaves it untouched on dark. */
 export function Wordmark({ size = 24 }: { size?: number }) {
-  const width = Math.round((2839 / 474) * size)
+  const width = Math.round((2839 / 474) * size);
   return (
     <img
       src="/logos/reineira-logo.png"
@@ -11,7 +11,7 @@ export function Wordmark({ size = 24 }: { size?: number }) {
       width={width}
       height={size}
       className="brand-logo"
-      style={{ height: size, width, display: 'block' }}
+      style={{ height: size, width, display: "block" }}
     />
-  )
+  );
 }

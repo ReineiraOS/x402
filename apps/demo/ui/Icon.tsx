@@ -1,11 +1,40 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties } from "react";
 import {
-  Zap, Lock, Shield, Fingerprint, Rss, Umbrella, Clock, Plug, Search, Copy, Check,
-  ArrowRight, ArrowUpRight, Github, TriangleAlert, Command, X, BookOpen, ChevronRight,
-  Layers, FileText, KeyRound, Play, RotateCw, Box, Globe, Terminal, Sun, Moon,
-  Plus, Pencil, PanelLeft, BarChart3,
+  Zap,
+  Lock,
+  Shield,
+  Fingerprint,
+  Rss,
+  Umbrella,
+  Clock,
+  Plug,
+  Search,
+  Copy,
+  Check,
+  ArrowRight,
+  ArrowUpRight,
+  Github,
+  TriangleAlert,
+  Command,
+  X,
+  BookOpen,
+  ChevronRight,
+  Layers,
+  FileText,
+  KeyRound,
+  Play,
+  RotateCw,
+  Box,
+  Globe,
+  Terminal,
+  Sun,
+  Moon,
+  Plus,
+  Pencil,
+  PanelLeft,
+  BarChart3,
   type LucideIcon,
-} from 'lucide-react'
+} from "lucide-react";
 
 /* Stable name → lucide component map. Keeps the prototype's `name` API so
    ported components don't churn, while upgrading the hand-drawn glyphs to
@@ -44,19 +73,21 @@ const ICONS: Record<string, LucideIcon> = {
   terminal: Terminal,
   sun: Sun,
   moon: Moon,
-}
+};
 
-export type IconName = keyof typeof ICONS
+export type IconName = keyof typeof ICONS;
 
 export interface IconProps {
-  name: string
-  size?: number
-  stroke?: number
-  className?: string
-  style?: CSSProperties
+  name: string;
+  size?: number;
+  stroke?: number;
+  className?: string;
+  style?: CSSProperties;
 }
 
 export function Icon({ name, size = 16, stroke = 1.6, className, style }: IconProps) {
-  const Cmp = ICONS[name] ?? Zap
-  return <Cmp size={size} strokeWidth={stroke} className={className} style={style} aria-hidden="true" />
+  const Cmp = ICONS[name] ?? Zap;
+  return (
+    <Cmp size={size} strokeWidth={stroke} className={className} style={style} aria-hidden="true" />
+  );
 }

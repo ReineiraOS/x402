@@ -21,6 +21,8 @@ type RunEvent = {
   escrowId?: string;
   escrowDeadline?: number | null;
   coverageId?: string | null;
+  confidential?: boolean;
+  amountHandle?: string;
   status?: string;
   msg?: string;
   detail?: string;
@@ -330,6 +332,10 @@ export function SettlementTheater({
   const [resourceId, setResourceId] = useState<string>("");
   const [pickOpen, setPickOpen] = useState(false);
   const [forceDecline, setForceDecline] = useState(false);
+  const [confidential, setConfidential] = useState(false);
+  const [amountHandle, setAmountHandle] = useState<string | null>(null);
+  const [revealing, setRevealing] = useState(false);
+  const [revealed, setRevealed] = useState<string | null>(null);
   const [busyEscrow, setBusyEscrow] = useState<string | null>(null);
   const [batchReleasing, setBatchReleasing] = useState(false);
   const [detail, setDetail] = useState<SpendRecord | null>(null);
@@ -466,6 +472,10 @@ export function SettlementTheater({
       if (event.kind === "escrow") {
         setEscrowId(event.escrowId ?? null);
         setEscrowDeadline(typeof event.escrowDeadline === "number" ? event.escrowDeadline : null);
+        if (event.confidential) {
+          setAmountHandle(event.amountHandle ?? null);
+          setRevealed(null);
+        }
         return;
       }
       if (event.kind === "coverage") {
@@ -523,6 +533,8 @@ export function SettlementTheater({
     setArbiscan(null);
     setEscrowId(null);
     setEscrowDeadline(null);
+    setAmountHandle(null);
+    setRevealed(null);
     setReleased(false);
     setNotice(null);
     setTab("console");
@@ -538,7 +550,7 @@ export function SettlementTheater({
         resourceId ? `&resourceId=${encodeURIComponent(resourceId)}` : ""
       }${treasury ? `&treasury=${encodeURIComponent(treasury)}` : ""}${
         forceDecline ? "&sellerDecline=1" : ""
-      }`;
+      }${confidential ? "&confidential=1" : ""}`;
       const res = await fetch(runUrl, { cache: "no-store", signal: controller.signal });
       if (!res.body) throw new Error("no response body");
       const reader = res.body.getReader();
@@ -576,7 +588,7 @@ export function SettlementTheater({
       setRunning(false);
       setStatus((s) => (s === "settled" || s === "failed" ? s : "failed"));
     }
-  }, [running, handleEvent, push, agent.id, agent.name, resourceId, forceDecline]);
+  }, [running, handleEvent, push, agent.id, agent.name, resourceId, forceDecline, confidential]);
 
   // Release a single past purchase (the seller redeems the escrow). Shared by the
   // per-row button and the "release all eligible" batch action.
@@ -649,6 +661,21 @@ export function SettlementTheater({
     [busyEscrow, batchReleasing, onSettled],
   );
 
+  const revealAmount = useCallback(async (id: string) => {
+    setRevealing(true);
+    try {
+      const res = await fetch("/api/confidential/reveal", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kind: "escrow", escrowId: id }),
+      });
+      const data = (await res.json()) as { ok?: boolean; usdc?: string };
+      if (data.ok && data.usdc) setRevealed(data.usdc);
+    } finally {
+      setRevealing(false);
+    }
+  }, []);
+
   const releaseAllEligible = useCallback(
     async (ids: string[]) => {
       if (batchReleasing || busyEscrow || ids.length === 0) return;
@@ -697,6 +724,9 @@ export function SettlementTheater({
     : selectedResource
       ? usdc(selectedResource.priceAtomic)
       : "—";
+
+  const shortHandle = (h: string) => (h.length > 14 ? `${h.slice(0, 6)}…${h.slice(-2)}` : h);
+  const isConfidential = confidential && !!amountHandle;
 
   // ── Granular deal pipeline: the full x402 → escrow → delivery → settle lifecycle as
   // discrete, state-aware steps (clearer than the old 3-node pipe). Each step reads its
@@ -1010,7 +1040,31 @@ export function SettlementTheater({
             </div>
             <div className="pay__field">
               <span className="pay__k">value</span>
-              <span className="pay__v pay__v--amt">{deal?.price ?? "—"}</span>
+              {isConfidential ? (
+                revealed ? (
+                  <span className="pay__v pay__v--amt pay__v--revealed">
+                    {revealed} USDC
+                    <em className="pay__cipher-note">decrypted with the seller&apos;s Fhenix permit</em>
+                  </span>
+                ) : (
+                  <span className="pay__cipher">
+                    <span className="pay__cipher-chip mono">
+                      <Icon name="lock" size={11} stroke={2} />
+                      {shortHandle(amountHandle!)} <em>(euint64)</em>
+                    </span>
+                    <button
+                      className="pay__reveal"
+                      onClick={() => escrowId && void revealAmount(escrowId)}
+                      disabled={revealing || !escrowId}
+                    >
+                      {revealing ? "Revealing…" : "Reveal as seller"}
+                    </button>
+                    <span className="pay__cipher-cap">encrypted on-chain</span>
+                  </span>
+                )
+              ) : (
+                <span className="pay__v pay__v--amt">{deal?.price ?? "—"}</span>
+              )}
             </div>
           </div>
           <ol className="pay__steps">
@@ -1212,7 +1266,10 @@ export function SettlementTheater({
               <div className="purch-empty">
                 <Icon name="feed" size={22} stroke={1.5} />
                 <p>No purchases yet.</p>
-                <span className="agents__muted">Run a deal — every resource the agent buys lands here with its data and Escrow status.</span>
+                <span className="agents__muted">
+                  Run a deal — every resource the agent buys lands here with its data and Escrow
+                  status.
+                </span>
               </div>
             ) : (
               <>
@@ -1267,10 +1324,7 @@ export function SettlementTheater({
           <div className="term__foot">
             <span className="term__input-mark mono">❯</span>
             <span className="term__input-kw mono">buy</span>
-            <div
-              className={`an-dd an-dd--up an-dd--block${pickOpen ? " open" : ""}`}
-              ref={pickRef}
-            >
+            <div className={`an-dd an-dd--up an-dd--block${pickOpen ? " open" : ""}`} ref={pickRef}>
               <button
                 type="button"
                 className="an-dd__trigger"
@@ -1311,6 +1365,18 @@ export function SettlementTheater({
                 disabled={running}
               />
               force breach
+            </label>
+            <label
+              className="term__decline term__confidential"
+              title="Run the same x402 flow on the FHE confidential stack — the on-chain escrow amount is an euint64 ciphertext, revealed only with the seller's Fhenix permit"
+            >
+              <input
+                type="checkbox"
+                checked={confidential}
+                onChange={(e) => setConfidential(e.target.checked)}
+                disabled={running}
+              />
+              Confidential settlement (FHE)
             </label>
             <button className="term__run" onClick={() => void runDeal()} disabled={running}>
               {running ? (

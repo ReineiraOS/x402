@@ -40,7 +40,9 @@ export default function PluginsPage() {
 
       {loading ? (
         <div className="page__empty">
-          <span className="spin" aria-hidden>◠</span>
+          <span className="spin" aria-hidden>
+            ◠
+          </span>
           loading plugins…
         </div>
       ) : (
@@ -50,8 +52,14 @@ export default function PluginsPage() {
             return (
               <div key={p.id} className={`cat-card bw-card${live ? "" : " cat-card--soon"}`}>
                 <div className="cat-card__head">
-                  <span className={`cat-card__icon${p.kind === "underwriter-policy" ? " cat-card__icon--protect" : ""}`}>
-                    <Icon name={p.kind === "underwriter-policy" ? "umbrella" : "plug"} size={24} stroke={2} />
+                  <span
+                    className={`cat-card__icon${p.kind === "underwriter-policy" ? " cat-card__icon--protect" : ""}`}
+                  >
+                    <Icon
+                      name={p.kind === "underwriter-policy" ? "umbrella" : "plug"}
+                      size={24}
+                      stroke={2}
+                    />
                   </span>
                   <span className="cat-card__name">{p.name}</span>
                   <MaturityStatusBadge status={live ? "live" : "spec"} />
@@ -59,7 +67,9 @@ export default function PluginsPage() {
                 <p className="cat-card__desc">{p.description}</p>
                 <div className="cat-card__meta">
                   <span className="cat-card__kind mono">{p.interface}</span>
-                  {p.resolverData ? <span className="cat-card__abi mono">{p.resolverData.abi}</span> : null}
+                  {p.resolverData ? (
+                    <span className="cat-card__abi mono">{p.resolverData.abi}</span>
+                  ) : null}
                 </div>
                 {p.tags.length > 0 ? (
                   <div className="cat-card__tags">

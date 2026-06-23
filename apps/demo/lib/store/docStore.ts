@@ -61,8 +61,7 @@ export function createDocStore<T>(opts: {
   };
 
   if (storageBackend === "file") {
-    const fileFor = async () =>
-      path.join(process.cwd(), `${opts.fileName}.${await getTenantId()}`);
+    const fileFor = async () => path.join(process.cwd(), `${opts.fileName}.${await getTenantId()}`);
     return {
       withLock,
       async read() {

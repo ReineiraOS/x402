@@ -176,7 +176,10 @@ export async function coverageReadiness(): Promise<CoverageReadiness | null> {
       functionName: "isPolicy",
       args: [cfg.policy],
     }) as Promise<boolean>,
-    publicClient.getStorageAt({ address: cfg.escrow, slot: `0x${ESCROW_INSURANCE_MANAGER_SLOT.toString(16)}` }),
+    publicClient.getStorageAt({
+      address: cfg.escrow,
+      slot: `0x${ESCROW_INSURANCE_MANAGER_SLOT.toString(16)}`,
+    }),
     publicClient
       .readContract({ address: cfg.pool, abi: insurancePoolAbi, functionName: "totalLiquidity" })
       .catch(() => 0n) as Promise<bigint>,
@@ -186,8 +189,10 @@ export async function coverageReadiness(): Promise<CoverageReadiness | null> {
   const insuranceManagerSet = insuranceManager === cfg.coverageManager;
 
   const reasons: string[] = [];
-  if (!policyRegistered) reasons.push("DeliveryPolicy is not yet allow-listed on the pool (registerPolicy + addPolicy)");
-  if (!insuranceManagerSet) reasons.push("escrow.setInsuranceManager(CoverageManager) has not been called");
+  if (!policyRegistered)
+    reasons.push("DeliveryPolicy is not yet allow-listed on the pool (registerPolicy + addPolicy)");
+  if (!insuranceManagerSet)
+    reasons.push("escrow.setInsuranceManager(CoverageManager) has not been called");
 
   return {
     ready: policyRegistered && insuranceManagerSet,
@@ -267,7 +272,16 @@ export async function attachCoverage(args: {
       address: cfg.coverageManager,
       abi: coverageManagerAbi,
       functionName: "purchaseCoverage",
-      args: [args.holder, cfg.pool, cfg.policy, escrowId, BigInt(args.amountAtomic), expiry, policyData, "0x"],
+      args: [
+        args.holder,
+        cfg.pool,
+        cfg.policy,
+        escrowId,
+        BigInt(args.amountAtomic),
+        expiry,
+        policyData,
+        "0x",
+      ],
     });
     const tx = await walletClient.writeContract(request);
     const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });

@@ -14,15 +14,24 @@ import {
   getSellerEscrowConfig,
   validateIssuedEscrow,
 } from "../../../lib/sellerEscrow";
+import type { IssuedEscrow } from "../../../lib/sellerEscrow";
+import { getConfidentialConfig } from "../../../lib/confidentialConfig";
+import { createConfidentialEscrowForSale } from "../../../lib/confidentialEscrow";
 import { getResource } from "../../../lib/resources";
 
 export const dynamic = "force-dynamic";
 
 const PAY_TO = "0x000000000000000000000000000000000000dEaD";
 
-async function buildPaymentRequired(deadlineSeconds?: number, resourceId?: string, coverage = false) {
+async function buildPaymentRequired(
+  deadlineSeconds?: number,
+  resourceId?: string,
+  coverage = false,
+  confidential = false,
+) {
   const escrowConfig = getSellerEscrowConfig();
   const resource = getResource(resourceId);
+  const amountAtomic = BigInt(resource.priceAtomic);
 
   let payTo: string = PAY_TO;
   let extra: Record<string, unknown> = {
@@ -30,16 +39,16 @@ async function buildPaymentRequired(deadlineSeconds?: number, resourceId?: strin
     version: X402.eip712.version,
   };
 
-  if (escrowConfig) {
-    // Every escrow uses the delivery resolver so the seller agent has a real on-chain
-    // action (attest delivery → release); coverage is an independent add-on on top.
+  let issued: IssuedEscrow | null = null;
+  if (confidential) {
+    const cfg = getConfidentialConfig();
+    if (cfg) issued = await createConfidentialEscrowForSale(cfg, amountAtomic, deadlineSeconds);
+  } else if (escrowConfig) {
     const useDelivery = !!escrowConfig.deliveryResolver;
-    const issued = await createEscrowForSale(
-      escrowConfig,
-      BigInt(resource.priceAtomic),
-      deadlineSeconds,
-      useDelivery,
-    );
+    issued = await createEscrowForSale(escrowConfig, amountAtomic, deadlineSeconds, useDelivery);
+  }
+
+  if (issued) {
     payTo = issued.extra.receiver;
     extra = {
       ...extra,
@@ -47,6 +56,7 @@ async function buildPaymentRequired(deadlineSeconds?: number, resourceId?: strin
       escrowDeadline: issued.deadline,
       resourceId: resource.id,
       coverage,
+      confidential,
     };
   }
 
@@ -129,12 +139,13 @@ export async function GET(request: Request) {
   const deadlineSeconds = Number(url.searchParams.get("deadlineSeconds")) || undefined;
   const resourceId = url.searchParams.get("resourceId") ?? undefined;
   const coverage = url.searchParams.get("coverage") === "1";
+  const confidential = url.searchParams.get("confidential") === "1";
   const resource = getResource(resourceId);
 
   if (!paymentHeader) {
     let paymentRequired: Awaited<ReturnType<typeof buildPaymentRequired>>;
     try {
-      paymentRequired = await buildPaymentRequired(deadlineSeconds, resourceId, coverage);
+      paymentRequired = await buildPaymentRequired(deadlineSeconds, resourceId, coverage, confidential);
     } catch (error) {
       return NextResponse.json(
         { error: "failed to open escrow for sale", detail: errorMessage(error) },
@@ -162,10 +173,8 @@ export async function GET(request: Request) {
   }
 
   const escrowConfig = getSellerEscrowConfig();
-  if (escrowConfig) {
-    const acceptedExtra = payment.accepted.extra?.escrow as
-      | X402EscrowExtra
-      | undefined;
+  if (escrowConfig && !confidential) {
+    const acceptedExtra = payment.accepted.extra?.escrow as X402EscrowExtra | undefined;
     if (!acceptedExtra) {
       return NextResponse.json(
         { error: "escrow payment required: missing escrow extra" },
@@ -207,7 +216,7 @@ export async function GET(request: Request) {
   }
 
   if (verify.isValid !== true) {
-    const paymentRequired = await buildPaymentRequired(deadlineSeconds, resourceId, coverage);
+    const paymentRequired = await buildPaymentRequired(deadlineSeconds, resourceId, coverage, confidential);
     return NextResponse.json(
       { ...paymentRequired, error: verify.invalidReason ?? "payment not valid" },
       {

@@ -20,10 +20,8 @@ const CHAIN_ID = "421614";
 // public/registry/v1/index.json this list is replaced by a runtime fetch with
 // this snapshot as the offline fallback (PORTAL_REGISTRY_URL env).
 function bundledCatalog(): PluginManifest[] {
-  const timeLockAddress =
-    (process.env.TIMELOCK_RESOLVER_ADDRESS as `0x${string}`) ?? null;
-  const coverageAddress =
-    (process.env.COVERAGE_MANAGER_ADDRESS as `0x${string}`) ?? null;
+  const timeLockAddress = (process.env.TIMELOCK_RESOLVER_ADDRESS as `0x${string}`) ?? null;
+  const coverageAddress = (process.env.COVERAGE_MANAGER_ADDRESS as `0x${string}`) ?? null;
   const deliveryResolverAddress =
     (process.env.DELIVERY_DEADLINE_RESOLVER_ADDRESS as `0x${string}`) ?? null;
   return [
@@ -132,9 +130,7 @@ export async function getPluginCatalog(): Promise<PluginManifest[]> {
   return bundledCatalog();
 }
 
-export async function getLivePlugin(
-  pluginId: string,
-): Promise<PluginManifest | null> {
+export async function getLivePlugin(pluginId: string): Promise<PluginManifest | null> {
   const catalog = await getPluginCatalog();
   const plugin = catalog.find((candidate) => candidate.id === pluginId);
   if (!plugin || plugin.status !== "live" || !plugin.addresses[CHAIN_ID]) {

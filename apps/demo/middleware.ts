@@ -12,7 +12,10 @@ export function middleware(req: NextRequest) {
   const sid = crypto.randomUUID();
   const headers = new Headers(req.headers);
   const existing = headers.get("cookie");
-  headers.set("cookie", existing ? `${existing}; ${TENANT_COOKIE}=${sid}` : `${TENANT_COOKIE}=${sid}`);
+  headers.set(
+    "cookie",
+    existing ? `${existing}; ${TENANT_COOKIE}=${sid}` : `${TENANT_COOKIE}=${sid}`,
+  );
 
   const res = NextResponse.next({ request: { headers } });
   res.cookies.set(TENANT_COOKIE, sid, {

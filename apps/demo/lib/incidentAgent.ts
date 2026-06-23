@@ -86,9 +86,7 @@ export async function runIncidentAgent(args: {
   }
 
   const anthropic = new Anthropic({ apiKey });
-  const messages: MessageParam[] = [
-    { role: "user", content: reportMessage(report) },
-  ];
+  const messages: MessageParam[] = [{ role: "user", content: reportMessage(report) }];
 
   const modelStream = anthropic.messages.stream({
     model: MODEL,
@@ -108,7 +106,8 @@ export async function runIncidentAgent(args: {
   if (textBuffer.length > 0) emit({ zone: "incident", kind: "thinking", streamEnd: true });
 
   let toolUse = finalMessage.content.find(
-    (block): block is ToolUseBlock => block.type === "tool_use" && block.name === "classify_incident",
+    (block): block is ToolUseBlock =>
+      block.type === "tool_use" && block.name === "classify_incident",
   );
   if (!toolUse) {
     const forced = await anthropic.messages.create({
@@ -119,17 +118,25 @@ export async function runIncidentAgent(args: {
       tool_choice: { type: "tool", name: "classify_incident" },
       messages: [
         ...messages,
-        { role: "assistant", content: textBuffer.trim().length > 0 ? textBuffer : "Assessing the report." },
+        {
+          role: "assistant",
+          content: textBuffer.trim().length > 0 ? textBuffer : "Assessing the report.",
+        },
         { role: "user", content: "Record your classification now by calling classify_incident." },
       ],
     });
     toolUse = forced.content.find(
-      (block): block is ToolUseBlock => block.type === "tool_use" && block.name === "classify_incident",
+      (block): block is ToolUseBlock =>
+        block.type === "tool_use" && block.name === "classify_incident",
     );
   }
   if (!toolUse) {
     const d = fallback();
-    emit({ zone: "incident", kind: "thinking", msg: `No tool call — defaulting to ${d.decision}.` });
+    emit({
+      zone: "incident",
+      kind: "thinking",
+      msg: `No tool call — defaulting to ${d.decision}.`,
+    });
     return d;
   }
 

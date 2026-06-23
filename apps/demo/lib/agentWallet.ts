@@ -46,10 +46,7 @@ export interface AgentWallet {
   isDeployed(): Promise<boolean>;
   deployIfNeeded(): Promise<{ deployedNow: boolean; txHash?: `0x${string}` }>;
   usdcBalance(): Promise<bigint>;
-  sweepUsdc(
-    to: `0x${string}`,
-    amount?: bigint,
-  ): Promise<{ txHash: `0x${string}`; amount: bigint }>;
+  sweepUsdc(to: `0x${string}`, amount?: bigint): Promise<{ txHash: `0x${string}`; amount: bigint }>;
 }
 
 export interface CreateAgentWalletOptions {
@@ -63,9 +60,7 @@ export async function createAgentWallet(
   opts: CreateAgentWalletOptions = {},
 ): Promise<AgentWallet> {
   const rpcUrl =
-    opts.rpcUrl ??
-    process.env.ARBITRUM_SEPOLIA_RPC_URL ??
-    "https://sepolia-rollup.arbitrum.io/rpc";
+    opts.rpcUrl ?? process.env.ARBITRUM_SEPOLIA_RPC_URL ?? "https://sepolia-rollup.arbitrum.io/rpc";
   const projectId = opts.zerodevProjectId ?? ZERODEV_PROJECT_ID;
   const usdcAddress = opts.usdcAddress ?? (ARBITRUM_SEPOLIA.usdc as `0x${string}`);
 
@@ -116,9 +111,7 @@ export async function createAgentWallet(
       hash: userOpHash,
     });
     if (!receipt.success) {
-      throw new Error(
-        `UserOperation reverted in tx ${receipt.receipt.transactionHash}`,
-      );
+      throw new Error(`UserOperation reverted in tx ${receipt.receipt.transactionHash}`);
     }
     return receipt.receipt.transactionHash;
   };
@@ -130,13 +123,9 @@ export async function createAgentWallet(
     signer: {
       address: account.address,
       signTypedData: (message) =>
-        account.signTypedData(
-          message as Parameters<typeof account.signTypedData>[0],
-        ),
+        account.signTypedData(message as Parameters<typeof account.signTypedData>[0]),
       readContract: (args) =>
-        publicClient.readContract(
-          args as Parameters<PublicClient["readContract"]>[0],
-        ),
+        publicClient.readContract(args as Parameters<PublicClient["readContract"]>[0]),
     },
 
     isDeployed,
@@ -145,9 +134,7 @@ export async function createAgentWallet(
       if (await isDeployed()) {
         return { deployedNow: false };
       }
-      const txHash = await sendSponsoredCalls([
-        { to: zeroAddress, value: 0n, data: "0x" },
-      ]);
+      const txHash = await sendSponsoredCalls([{ to: zeroAddress, value: 0n, data: "0x" }]);
       return { deployedNow: true, txHash };
     },
 
@@ -168,9 +155,7 @@ export async function createAgentWallet(
       });
       const value = amount ?? balance;
       if (value === 0n || value > balance) {
-        throw new Error(
-          `Insufficient USDC to sweep: have ${balance}, want ${value}`,
-        );
+        throw new Error(`Insufficient USDC to sweep: have ${balance}, want ${value}`);
       }
       const txHash = await sendSponsoredCalls([
         {
