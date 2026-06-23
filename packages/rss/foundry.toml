@@ -7,13 +7,19 @@ libs = ["node_modules", "../../node_modules"]
 
 remappings = [
     "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+    "@fhenixprotocol/cofhe-contracts/=node_modules/@fhenixprotocol/cofhe-contracts/",
+    "@cofhe/mock-contracts/=node_modules/@cofhe/mock-contracts/",
+    "@cofhe/foundry-plugin/=node_modules/@cofhe/foundry-plugin/",
     "forge-std/=../../node_modules/forge-std/src/",
+    "hardhat/console.sol=../../node_modules/forge-std/src/console.sol",
 ]
 
 solc_version = "0.8.25"
 evm_version = "cancun"
 optimizer = true
 optimizer_runs = 200
+via_ir = true
+isolate = true
 
 [profile.default.fuzz]
 runs = 256
