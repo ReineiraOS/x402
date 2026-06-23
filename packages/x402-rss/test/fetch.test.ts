@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { privateKeyToAccount } from "viem/accounts";
-import { encodePaymentRequiredHeader, decodePaymentSignatureHeader } from "@reineira-os/x402-core/http";
+import {
+  encodePaymentRequiredHeader,
+  decodePaymentSignatureHeader,
+} from "@reineira-os/x402-core/http";
 import { createX402RssFetch } from "../src/fetch.js";
 import { arbitrumSepolia } from "../src/config.js";
 
@@ -79,14 +82,20 @@ describe("createX402RssFetch", () => {
 
   it("rejects a payment whose amount exceeds maxValue", async () => {
     const { fetch } = mockResource("999000000"); // 999 USDC > 10 USDC cap
-    const f = createX402RssFetch({ account: ACCOUNT, fetch: fetch as never, maxValue: 10_000_000n });
+    const f = createX402RssFetch({
+      account: ACCOUNT,
+      fetch: fetch as never,
+      maxValue: 10_000_000n,
+    });
     await expect(f("https://example.test/job")).rejects.toThrow(/amount exceeds maxValue/);
   });
 
   it("rejects a payment whose asset is not the configured USDC", async () => {
     const { fetch } = mockResource("1000000", "0x1111111111111111111111111111111111111111");
     const f = createX402RssFetch({ account: ACCOUNT, fetch: fetch as never });
-    await expect(f("https://example.test/job")).rejects.toThrow(/no acceptable payment requirements/);
+    await expect(f("https://example.test/job")).rejects.toThrow(
+      /no acceptable payment requirements/,
+    );
   });
 
   it("rejects a non-positive payment amount", async () => {

@@ -7,8 +7,20 @@ const RUN = process.env.X402_RSS_INTEGRATION === "1";
 const RPC_URL = process.env.ARBITRUM_SEPOLIA_RPC_URL;
 
 const erc20Abi = [
-  { type: "function", name: "name", stateMutability: "view", inputs: [], outputs: [{ type: "string" }] },
-  { type: "function", name: "decimals", stateMutability: "view", inputs: [], outputs: [{ type: "uint8" }] },
+  {
+    type: "function",
+    name: "name",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "string" }],
+  },
+  {
+    type: "function",
+    name: "decimals",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint8" }],
+  },
 ] as const;
 
 describe.runIf(RUN)("Arbitrum Sepolia integration", () => {

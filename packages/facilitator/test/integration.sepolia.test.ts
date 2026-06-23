@@ -6,7 +6,8 @@ import { createFacilitator } from "../src/facilitator.js";
 
 const RUN = process.env.X402_FACILITATOR_INTEGRATION === "1";
 const SETTLE = process.env.X402_FACILITATOR_SETTLE === "1";
-const PRIVATE_KEY = (process.env.FACILITATOR_PRIVATE_KEY ?? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80") as `0x${string}`;
+const PRIVATE_KEY = (process.env.FACILITATOR_PRIVATE_KEY ??
+  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80") as `0x${string}`;
 
 const PAY_TO = "0x000000000000000000000000000000000000dEaD" as `0x${string}`;
 const PAYER = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as `0x${string}`;

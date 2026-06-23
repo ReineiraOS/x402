@@ -24,7 +24,11 @@ describe("facilitator app", () => {
     const res = await app.request("/verify", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ x402Version: 2, paymentPayload: payload, paymentRequirements: requirements }),
+      body: JSON.stringify({
+        x402Version: 2,
+        paymentPayload: payload,
+        paymentRequirements: requirements,
+      }),
     });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ isValid: true, payer: "0xPAYER" });
@@ -35,10 +39,18 @@ describe("facilitator app", () => {
     const res = await app.request("/settle", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ x402Version: 2, paymentPayload: payload, paymentRequirements: requirements }),
+      body: JSON.stringify({
+        x402Version: 2,
+        paymentPayload: payload,
+        paymentRequirements: requirements,
+      }),
     });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ success: true, transaction: "0xTX", network: "eip155:421614" });
+    expect(await res.json()).toEqual({
+      success: true,
+      transaction: "0xTX",
+      network: "eip155:421614",
+    });
   });
 
   it("POST /verify with a malformed body -> 400", async () => {
@@ -63,25 +75,44 @@ describe("facilitator app", () => {
 
   it("POST /verify when facilitator throws -> 502 with a stable reason (no leaked internals)", async () => {
     const app = createApp(
-      fakeFacilitator({ verify: async () => { throw new Error("rpc down"); } }) as never,
+      fakeFacilitator({
+        verify: async () => {
+          throw new Error("rpc down");
+        },
+      }) as never,
     );
     const res = await app.request("/verify", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ x402Version: 2, paymentPayload: payload, paymentRequirements: requirements }),
+      body: JSON.stringify({
+        x402Version: 2,
+        paymentPayload: payload,
+        paymentRequirements: requirements,
+      }),
     });
     expect(res.status).toBe(502);
-    expect(await res.json()).toEqual({ isValid: false, invalidReason: "facilitator_verify_failed" });
+    expect(await res.json()).toEqual({
+      isValid: false,
+      invalidReason: "facilitator_verify_failed",
+    });
   });
 
   it("POST /settle when facilitator throws -> 502 with a stable reason (no leaked internals)", async () => {
     const app = createApp(
-      fakeFacilitator({ settle: async () => { throw new Error("settlement reverted"); } }) as never,
+      fakeFacilitator({
+        settle: async () => {
+          throw new Error("settlement reverted");
+        },
+      }) as never,
     );
     const res = await app.request("/settle", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ x402Version: 2, paymentPayload: payload, paymentRequirements: requirements }),
+      body: JSON.stringify({
+        x402Version: 2,
+        paymentPayload: payload,
+        paymentRequirements: requirements,
+      }),
     });
     expect(res.status).toBe(502);
     expect(await res.json()).toEqual({ success: false, errorReason: "facilitator_settle_failed" });

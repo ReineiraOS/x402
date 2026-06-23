@@ -18,8 +18,7 @@ export function isPaymentRequirements(value: unknown): value is PaymentRequireme
     typeof value.amount === "string" &&
     isOptionalString(value.asset) &&
     isOptionalString(value.payTo) &&
-    (value.maxTimeoutSeconds === undefined ||
-      typeof value.maxTimeoutSeconds === "number") &&
+    (value.maxTimeoutSeconds === undefined || typeof value.maxTimeoutSeconds === "number") &&
     (value.extra === undefined || value.extra === null || isObject(value.extra))
   );
 }
@@ -29,8 +28,6 @@ export function isPaymentPayload(value: unknown): value is PaymentPayload {
     return false;
   }
   return (
-    typeof value.x402Version === "number" &&
-    isObject(value.accepted) &&
-    isObject(value.payload)
+    typeof value.x402Version === "number" && isObject(value.accepted) && isObject(value.payload)
   );
 }
