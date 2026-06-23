@@ -7,5 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@reineira-os/x402-rss-demo", "@reineira-os/x402-facilitator-web"]
+  "ignore": []
 }

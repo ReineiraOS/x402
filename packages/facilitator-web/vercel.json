@@ -1,5 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "hono",
-  "installCommand": "pnpm install --frozen-lockfile && pnpm --filter \"@reineira-os/x402-facilitator...\" run build"
-}

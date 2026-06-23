@@ -1,7 +1,0 @@
-# Local runtime state — contains private keys, never commit
-.agent-store.json
-.session-store.json
-*.bak
-.env*
-.next
-node_modules
