@@ -1,6 +1,6 @@
 {
   "name": "@reineira-os/x402-facilitator",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Self-hostable x402 facilitator (verify/settle) for the Reineira x402 adapter.",
   "keywords": [
     "x402",

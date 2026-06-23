@@ -1,5 +1,13 @@
 # @reineira-os/x402
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies [39a26e0]
+  - @reineira-os/x402-shared@0.1.1
+  - @reineira-os/x402-core@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

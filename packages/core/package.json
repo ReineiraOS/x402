@@ -1,6 +1,6 @@
 {
   "name": "@reineira-os/x402-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "x402 settlement SDK — exact (EIP-3009) scheme, escrow funding, and the Fhenix FHE codec.",
   "keywords": [
     "x402",
