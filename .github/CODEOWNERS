@@ -1,0 +1,11 @@
+# Code owners — GitHub auto-requests review from these owners on matching paths.
+# Org admins. Add @ReineiraOS/internal-reineira-team here once it has repo access.
+
+# Default — any admin may review
+*               @VladVelik @0xkkkn
+
+# Governance, licensing, security policy, and CI
+/.github/       @VladVelik @0xkkkn
+/LICENSE        @VladVelik @0xkkkn
+/NOTICE         @VladVelik @0xkkkn
+/SECURITY.md    @VladVelik @0xkkkn
