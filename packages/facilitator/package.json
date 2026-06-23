@@ -1,7 +1,18 @@
 {
   "name": "@reineira-os/x402-facilitator",
   "version": "0.1.0",
-  "description": "Self-hostable x402 facilitator (verify/settle) for the x402-rss adapter",
+  "description": "Self-hostable x402 facilitator (verify/settle) for the Reineira x402 adapter.",
+  "keywords": [
+    "x402",
+    "facilitator",
+    "verify",
+    "settle",
+    "payments",
+    "arbitrum"
+  ],
+  "author": "Reineira Labs (https://reineira.xyz)",
+  "homepage": "https://github.com/ReineiraOS/x402#readme",
+  "bugs": "https://github.com/ReineiraOS/x402/issues",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

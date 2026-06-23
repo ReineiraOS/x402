@@ -1,12 +1,27 @@
 {
-  "name": "@reineira-os/x402-rss",
+  "name": "@reineira-os/x402",
   "version": "0.1.0",
-  "description": "Insured, FHE-confidential x402 settlement on the Reineira Settlement Standard (umbrella SDK)",
+  "description": "Insured, condition-gated, FHE-confidential x402 settlement on Arbitrum — the batteries-included adapter SDK.",
+  "keywords": [
+    "x402",
+    "payments",
+    "escrow",
+    "insurance",
+    "confidential",
+    "fhe",
+    "fhenix",
+    "arbitrum",
+    "settlement",
+    "sdk"
+  ],
+  "author": "Reineira Labs (https://reineira.xyz)",
+  "homepage": "https://github.com/ReineiraOS/x402#readme",
+  "bugs": "https://github.com/ReineiraOS/x402/issues",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/ReineiraOS/x402.git",
-    "directory": "packages/x402-rss"
+    "directory": "packages/x402"
   },
   "publishConfig": {
     "access": "public"

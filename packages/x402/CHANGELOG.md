@@ -1,4 +1,4 @@
-# @reineira-os/x402-rss
+# @reineira-os/x402
 
 ## 0.1.0
 

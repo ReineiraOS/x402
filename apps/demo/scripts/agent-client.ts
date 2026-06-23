@@ -1,6 +1,6 @@
 import { privateKeyToAccount } from "viem/accounts";
 import { X402 } from "@reineira-os/x402-shared";
-import { createX402RssFetch } from "@reineira-os/x402-rss";
+import { createX402RssFetch } from "@reineira-os/x402";
 
 const RESOURCE_URL = process.env.RESOURCE_URL ?? "http://localhost:3000/api/resource";
 // Standard publicly-known Anvil/Hardhat test account #1 — throwaway demo default, NEVER fund.

@@ -1,7 +1,19 @@
 {
   "name": "@reineira-os/x402-contracts",
   "version": "0.1.0",
-  "description": "Deployable RSS implementations — Delivery resolver/policy and X402 escrow receiver",
+  "description": "Deployable RSS contracts for x402 — delivery resolver/policy and the x402 escrow receiver.",
+  "keywords": [
+    "x402",
+    "solidity",
+    "escrow",
+    "resolver",
+    "receiver",
+    "rss",
+    "arbitrum"
+  ],
+  "author": "Reineira Labs (https://reineira.xyz)",
+  "homepage": "https://github.com/ReineiraOS/x402#readme",
+  "bugs": "https://github.com/ReineiraOS/x402/issues",
   "license": "MIT",
   "repository": {
     "type": "git",
