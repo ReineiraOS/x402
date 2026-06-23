@@ -1,6 +1,6 @@
 {
   "name": "@reineira-os/x402-contracts",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Deployable RSS implementations — Delivery resolver/policy and X402 escrow receiver",
   "license": "MIT",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@reineira-os/x402-shared",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Shared types, ABIs, and chain/x402 constants for the x402-rss adapter",
   "license": "MIT",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@reineira-os/x402-facilitator",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Self-hostable x402 facilitator (verify/settle) for the x402-rss adapter",
   "license": "MIT",
   "type": "module",

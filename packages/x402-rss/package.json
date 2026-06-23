@@ -1,6 +1,6 @@
 {
   "name": "@reineira-os/x402-rss",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Insured, FHE-confidential x402 settlement on the Reineira Settlement Standard (umbrella SDK)",
   "license": "MIT",
   "repository": {
