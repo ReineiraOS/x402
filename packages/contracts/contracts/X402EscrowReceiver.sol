@@ -49,9 +49,8 @@ contract X402EscrowReceiver is IFundingSource {
     function settle(uint256 escrowId, bytes calldata fundingProof) external override returns (uint256) {
         PaymentAuthorization memory a = abi.decode(fundingProof, (PaymentAuthorization));
 
-        IERC3009Receive(usdc).receiveWithAuthorization(
-            a.from, address(this), a.value, a.validAfter, a.validBefore, a.nonce, a.signature
-        );
+        IERC3009Receive(usdc)
+            .receiveWithAuthorization(a.from, address(this), a.value, a.validAfter, a.validBefore, a.nonce, a.signature);
 
         IERC20Approve(usdc).approve(escrow, a.value);
         IEscrowFund(escrow).fund(escrowId, a.value);
