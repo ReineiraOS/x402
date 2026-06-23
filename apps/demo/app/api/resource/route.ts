@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http, formatGwei } from "viem";
 import { arbitrumSepolia } from "viem/chains";
-import { ARBITRUM_SEPOLIA, X402 } from "@reineira-os/x402-rss-shared";
-import type { X402EscrowExtra } from "@reineira-os/x402-rss-shared";
+import { ARBITRUM_SEPOLIA, X402 } from "@reineira-os/x402-shared";
+import type { X402EscrowExtra } from "@reineira-os/x402-shared";
 import {
   decodePaymentSignatureHeader,
   encodePaymentRequiredHeader,

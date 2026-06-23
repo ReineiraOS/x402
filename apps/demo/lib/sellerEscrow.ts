@@ -11,8 +11,8 @@ import {
 } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
-import { escrowAbi } from "@reineira-os/x402-rss-shared";
-import type { X402EscrowExtra } from "@reineira-os/x402-rss-shared";
+import { escrowAbi } from "@reineira-os/x402-shared";
+import type { X402EscrowExtra } from "@reineira-os/x402-shared";
 
 export interface SellerEscrowConfig {
   escrow: `0x${string}`;

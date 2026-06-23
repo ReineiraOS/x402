@@ -1,5 +1,5 @@
 import { encodeAbiParameters, getAddress, parseEventLogs, type Hex } from "viem";
-import { confidentialCoverageManagerAbi } from "@reineira-os/x402-rss-shared";
+import { confidentialCoverageManagerAbi } from "@reineira-os/x402-shared";
 import { encryptAddress, encryptUint64, type ConfidentialClient } from "./confidential.js";
 import type { ConfidentialViem } from "./confidential-escrow.js";
 

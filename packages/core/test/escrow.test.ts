@@ -7,7 +7,7 @@ import {
   type PublicClient,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { paymentAuthorizationAbiParameters } from "@reineira-os/x402-rss-shared";
+import { paymentAuthorizationAbiParameters } from "@reineira-os/x402-shared";
 import {
   deriveEscrowNonce,
   encodePaymentAuthorization,

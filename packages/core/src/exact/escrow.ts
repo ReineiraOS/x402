@@ -1,5 +1,5 @@
 import { encodeAbiParameters, getAddress, keccak256, type Hex } from "viem";
-import { paymentAuthorizationAbiParameters } from "@reineira-os/x402-rss-shared";
+import { paymentAuthorizationAbiParameters } from "@reineira-os/x402-shared";
 import type { ExactEvmAuthorization, PaymentRequirements } from "../types.js";
 
 export type EscrowPaymentExtra = {

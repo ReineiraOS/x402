@@ -1,5 +1,5 @@
 import { getAddress, parseEventLogs, type Hex, type PublicClient, type WalletClient } from "viem";
-import { confidentialEscrowAbi } from "@reineira-os/x402-rss-shared";
+import { confidentialEscrowAbi } from "@reineira-os/x402-shared";
 import {
   encryptAddress,
   encryptUint64,

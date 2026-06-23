@@ -1,4 +1,4 @@
-import { ARBITRUM_SEPOLIA } from "@reineira-os/x402-rss-shared";
+import { ARBITRUM_SEPOLIA } from "@reineira-os/x402-shared";
 
 // Single source of truth for the ZeroDev project id. It is a public client id (safe to
 // ship to the browser), but it must live in one place so the server-side (ZERODEV_PROJECT_ID)

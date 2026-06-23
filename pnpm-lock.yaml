@@ -47,7 +47,7 @@ importers:
       '@reineira-os/x402-rss':
         specifier: workspace:*
         version: link:../../packages/x402-rss
-      '@reineira-os/x402-rss-shared':
+      '@reineira-os/x402-shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@zerodev/ecdsa-validator':
@@ -123,7 +123,7 @@ importers:
       '@cofhe/sdk':
         specifier: ^0.5.2
         version: 0.5.2(@types/react@19.2.16)(react@19.2.7)(viem@2.52.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.4.3))
-      '@reineira-os/x402-rss-shared':
+      '@reineira-os/x402-shared':
         specifier: workspace:*
         version: link:../shared
       viem:
@@ -160,7 +160,7 @@ importers:
       '@reineira-os/x402-core':
         specifier: workspace:*
         version: link:../core
-      '@reineira-os/x402-rss-shared':
+      '@reineira-os/x402-shared':
         specifier: workspace:*
         version: link:../shared
       hono:
@@ -241,7 +241,7 @@ importers:
       '@reineira-os/x402-core':
         specifier: workspace:*
         version: link:../core
-      '@reineira-os/x402-rss-shared':
+      '@reineira-os/x402-shared':
         specifier: workspace:*
         version: link:../shared
       viem:

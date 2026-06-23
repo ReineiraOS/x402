@@ -1,5 +1,5 @@
 import { privateKeyToAccount } from "viem/accounts";
-import { X402 } from "@reineira-os/x402-rss-shared";
+import { X402 } from "@reineira-os/x402-shared";
 import { createX402RssFetch } from "@reineira-os/x402-rss";
 
 const RESOURCE_URL = process.env.RESOURCE_URL ?? "http://localhost:3000/api/resource";

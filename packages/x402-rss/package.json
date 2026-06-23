@@ -24,7 +24,7 @@
   "dependencies": {
     "viem": "^2.21.0",
     "@reineira-os/x402-core": "workspace:*",
-    "@reineira-os/x402-rss-shared": "workspace:*"
+    "@reineira-os/x402-shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -1,4 +1,4 @@
-import type { Severity } from "@reineira-os/x402-rss-shared";
+import type { Severity } from "@reineira-os/x402-shared";
 
 export interface IncidentReport {
   id: string;

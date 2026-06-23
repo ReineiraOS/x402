@@ -5,7 +5,7 @@ import {
   toFacilitatorEvmSigner,
   type FacilitatorEvmSigner,
 } from "@reineira-os/x402-core/exact/settle";
-import { X402 } from "@reineira-os/x402-rss-shared";
+import { X402 } from "@reineira-os/x402-shared";
 
 export interface CreateFacilitatorOptions {
   account: LocalAccount;

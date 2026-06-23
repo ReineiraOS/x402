@@ -1,6 +1,6 @@
 import { toHex, type Hex } from "viem";
 import { createConfidentialEscrow, readConfidentialAmount } from "@reineira-os/x402-core";
-import { confidentialEscrowAbi } from "@reineira-os/x402-rss-shared";
+import { confidentialEscrowAbi } from "@reineira-os/x402-shared";
 import type { IssuedEscrow } from "./sellerEscrow";
 import {
   getConfidentialConfig,

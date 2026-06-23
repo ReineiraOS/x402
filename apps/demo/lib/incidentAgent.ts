@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { MessageParam, Tool, ToolUseBlock } from "@anthropic-ai/sdk/resources/messages";
-import { isSeverity, type Severity } from "@reineira-os/x402-rss-shared";
+import { isSeverity, type Severity } from "@reineira-os/x402-shared";
 import type { IncidentReport } from "./incidentReports";
 
 type RunEvent = Record<string, unknown>;

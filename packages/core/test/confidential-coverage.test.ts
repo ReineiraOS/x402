@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { getAddress, decodeAbiParameters, encodeEventTopics } from "viem";
-import { confidentialCoverageManagerAbi } from "@reineira-os/x402-rss-shared";
+import { confidentialCoverageManagerAbi } from "@reineira-os/x402-shared";
 import {
   purchaseConfidentialCoverage,
   disputeConfidentialCoverage,

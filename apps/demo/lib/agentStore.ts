@@ -3,7 +3,7 @@ import { createPublicClient, getAddress, http } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import { generatePrivateKey } from "viem/accounts";
 import type { Hex } from "viem";
-import { ARBITRUM_SEPOLIA } from "@reineira-os/x402-rss-shared";
+import { ARBITRUM_SEPOLIA } from "@reineira-os/x402-shared";
 import { createAgentWallet } from "./agentWallet";
 import { createDocStore } from "./store/docStore";
 

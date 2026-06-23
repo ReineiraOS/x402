@@ -15,7 +15,7 @@ import {
   createZeroDevPaymasterClient,
 } from "@zerodev/sdk";
 import { getEntryPoint, KERNEL_V3_1 } from "@zerodev/sdk/constants";
-import { ARBITRUM_SEPOLIA } from "@reineira-os/x402-rss-shared";
+import { ARBITRUM_SEPOLIA } from "@reineira-os/x402-shared";
 import type { ClientEvmSigner } from "@reineira-os/x402-core/exact/client";
 import { ZERODEV_PROJECT_ID, zerodevBundlerRpc } from "./zerodev";
 

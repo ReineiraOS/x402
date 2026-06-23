@@ -12,7 +12,7 @@ import { toECDSASigner } from "@zerodev/permissions/signers";
 import { toSudoPolicy } from "@zerodev/permissions/policies";
 import { addressToEmptyAccount, createKernelAccount } from "@zerodev/sdk";
 import { getEntryPoint, KERNEL_V3_1 } from "@zerodev/sdk/constants";
-import { ARBITRUM_SEPOLIA } from "@reineira-os/x402-rss-shared";
+import { ARBITRUM_SEPOLIA } from "@reineira-os/x402-shared";
 import { zerodevPasskeyServerUrl } from "./zerodev";
 
 const PASSKEY_SERVER_URL = zerodevPasskeyServerUrl();
