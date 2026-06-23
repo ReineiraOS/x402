@@ -139,8 +139,9 @@ describe("wrapFetchWithPayment", () => {
     expect(decoded.x402Version).toBe(2);
     expect(decoded.accepted.network).toBe(NETWORK);
 
-    const auth = (decoded.payload as { authorization: { to: string; value: string }; signature: string })
-      .authorization;
+    const auth = (
+      decoded.payload as { authorization: { to: string; value: string }; signature: string }
+    ).authorization;
     expect(auth.to).toBe(PAY_TO);
     expect(BigInt((auth as { value: string }).value)).toBe(BigInt(AMOUNT));
 
@@ -150,7 +151,9 @@ describe("wrapFetchWithPayment", () => {
 
   it("passes non-402 responses through with a single base fetch call", async () => {
     const client = buildClient();
-    const baseFetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const baseFetch = vi.fn(
+      async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    );
 
     const wrapped = wrapFetchWithPayment(baseFetch as unknown as typeof fetch, client);
     const res = await wrapped("https://example.com/api/resource");

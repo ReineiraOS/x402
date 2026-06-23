@@ -50,3 +50,26 @@ export {
   type SupportedResponse,
   type RegisterExactEvmSchemeConfig,
 } from "./facilitator.js";
+
+export {
+  createConfidentialClient,
+  encryptUint64,
+  encryptAddress,
+  decryptUint64,
+  type ConfidentialClient,
+  type EncryptedInput,
+} from "./exact/confidential.js";
+
+export {
+  createConfidentialEscrow,
+  readConfidentialAmount,
+  type ConfidentialViem,
+  type CreateConfidentialEscrowParams,
+} from "./exact/confidential-escrow.js";
+
+export {
+  purchaseConfidentialCoverage,
+  disputeConfidentialCoverage,
+  getCoverageStatus,
+  type PurchaseConfidentialCoverageParams,
+} from "./exact/confidential-coverage.js";

@@ -24,9 +24,7 @@ const DECIMAL_RE = /^[0-9]+$/;
 const BYTES32_RE = /^0x[0-9a-fA-F]{64}$/;
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 
-export function getEscrowExtra(
-  requirements: PaymentRequirements,
-): EscrowPaymentExtra | null {
+export function getEscrowExtra(requirements: PaymentRequirements): EscrowPaymentExtra | null {
   const raw = requirements.extra?.escrow as Record<string, unknown> | undefined;
   if (!raw) {
     return null;
@@ -57,10 +55,7 @@ export function getEscrowExtra(
 
 export function deriveEscrowNonce(escrowId: bigint, salt: Hex): Hex {
   return keccak256(
-    encodeAbiParameters(
-      [{ type: "uint256" }, { type: "bytes32" }],
-      [escrowId, salt],
-    ),
+    encodeAbiParameters([{ type: "uint256" }, { type: "bytes32" }], [escrowId, salt]),
   );
 }
 
