@@ -14,13 +14,7 @@ export interface SettlementProof {
   signature: Hex;
 }
 
-export type DealStatus =
-  | "open"
-  | "funded"
-  | "delivered"
-  | "released"
-  | "disputed"
-  | "refunded";
+export type DealStatus = "open" | "funded" | "delivered" | "released" | "disputed" | "refunded";
 
 export interface X402EscrowExtra {
   escrowId: string;
