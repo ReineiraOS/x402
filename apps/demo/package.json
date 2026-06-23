@@ -13,8 +13,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.102.0",
     "@neondatabase/serverless": "^1.1.0",
+    "@reineira-os/x402": "workspace:*",
     "@reineira-os/x402-core": "workspace:*",
-    "@reineira-os/x402-rss": "workspace:*",
     "@reineira-os/x402-shared": "workspace:*",
     "@zerodev/ecdsa-validator": "^5.4.9",
     "@zerodev/passkey-validator": "^5.6.0",

@@ -1,4 +1,4 @@
-# @reineira-os/x402-rss
+# @reineira-os/x402
 
 MIT buyer-side x402 adapter for Arbitrum Sepolia. A thin wrapper over our own
 `@reineira-os/x402-core` `exact` client, preconfigured for the `eip155:421614`
@@ -7,7 +7,7 @@ MIT buyer-side x402 adapter for Arbitrum Sepolia. A thin wrapper over our own
 ## Usage
 
 ```ts
-import { createX402RssFetch } from "@reineira-os/x402-rss";
+import { createX402RssFetch } from "@reineira-os/x402";
 import { privateKeyToAccount } from "viem/accounts";
 
 const fetchPaid = createX402RssFetch({ account: privateKeyToAccount(PK) });

@@ -23,12 +23,12 @@ x402 is pay-first: an agent pays before it receives anything, so counterparty ri
 `x402-rss` makes that payment land in a settlement where a missed delivery deadline can trigger a
 **confidential refund** from an insurance pool — instead of the payer simply eating the loss. The
 payment wire (EIP-3009, plaintext value) is unchanged; confidentiality is a property of the
-*settlement target*, not the payment scheme, so the x402 client and facilitator stay standard.
+_settlement target_, not the payment scheme, so the x402 client and facilitator stay standard.
 
 ## Install
 
 ```bash
-pnpm add @reineira-os/x402-rss @reineira-os/x402-core
+pnpm add @reineira-os/x402 @reineira-os/x402-core
 ```
 
 The Solidity standard and deployable implementations are published too, for importing into Foundry
@@ -40,14 +40,14 @@ pnpm add @reineira-os/rss @reineira-os/x402-contracts
 
 ## Packages
 
-| Package                        | Stack              | What it is                                                                       |
-| ------------------------------ | ------------------ | -------------------------------------------------------------------------------- |
-| `@reineira-os/rss`             | Solidity (Foundry) | The standard: RSS interfaces + conformance suites, incl. the confidential profile |
-| `@reineira-os/x402-contracts`  | Solidity (Foundry) | Deployable implementations: delivery resolver/policy, X402 + confidential receivers |
-| `@reineira-os/x402-core`       | TypeScript         | SDK: x402 `exact` (EIP-3009) scheme, escrow funding, and the Fhenix FHE codec    |
-| `@reineira-os/x402-rss`        | TypeScript         | Umbrella adapter SDK: x402 / EIP-3009 payment → RSS-conformant settlement        |
-| `@reineira-os/x402-facilitator`| TypeScript (Hono)  | Self-hostable x402 verify + settle server (Arbitrum Sepolia has no hosted one)   |
-| `@reineira-os/x402-shared`     | TypeScript         | Shared types, addresses, x402 constants, ABIs                                    |
+| Package                         | Stack              | What it is                                                                          |
+| ------------------------------- | ------------------ | ----------------------------------------------------------------------------------- |
+| `@reineira-os/rss`              | Solidity (Foundry) | The standard: RSS interfaces + conformance suites, incl. the confidential profile   |
+| `@reineira-os/x402-contracts`   | Solidity (Foundry) | Deployable implementations: delivery resolver/policy, X402 + confidential receivers |
+| `@reineira-os/x402-core`        | TypeScript         | SDK: x402 `exact` (EIP-3009) scheme, escrow funding, and the Fhenix FHE codec       |
+| `@reineira-os/x402`             | TypeScript         | Umbrella adapter SDK: x402 / EIP-3009 payment → RSS-conformant settlement           |
+| `@reineira-os/x402-facilitator` | TypeScript (Hono)  | Self-hostable x402 verify + settle server (Arbitrum Sepolia has no hosted one)      |
+| `@reineira-os/x402-shared`      | TypeScript         | Shared types, addresses, x402 constants, ABIs                                       |
 
 A reference dashboard (autonomous buyer + seller agents settling on-chain, with a Settlement Theater
 that shows the on-chain ciphertext and an authorized-party "reveal") is in this repo under

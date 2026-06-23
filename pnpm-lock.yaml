@@ -44,12 +44,12 @@ importers:
       '@neondatabase/serverless':
         specifier: ^1.1.0
         version: 1.1.0
+      '@reineira-os/x402':
+        specifier: workspace:*
+        version: link:../../packages/x402
       '@reineira-os/x402-core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@reineira-os/x402-rss':
-        specifier: workspace:*
-        version: link:../../packages/x402-rss
       '@reineira-os/x402-shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -239,7 +239,7 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.19.19)
 
-  packages/x402-rss:
+  packages/x402:
     dependencies:
       '@reineira-os/x402-core':
         specifier: workspace:*
