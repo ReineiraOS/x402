@@ -46,7 +46,7 @@ pnpm typecheck    # tsc --noEmit
 - `GET /api/resource` — the x402 resource server.
   - No `payment-signature` header → `402` with an x402 `payment-required`
     body (version 2, scheme `exact`, network `eip155:421614`, USDC asset
-    from `@reineira-os/x402-rss-shared`).
+    from `@reineira-os/x402-shared`).
   - With `payment-signature` header → validates the escrow, runs real
     facilitator `/verify` + `/settle`, then returns a **live on-chain data
     report** (`lib/resources.ts`): current Arbitrum Sepolia block + gas plus
