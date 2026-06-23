@@ -1,7 +1,20 @@
 {
   "name": "@reineira-os/x402-core",
   "version": "0.1.0",
-  "description": "x402 confidential settlement SDK — exact scheme, escrow funding, and the Fhenix FHE codec",
+  "description": "x402 settlement SDK — exact (EIP-3009) scheme, escrow funding, and the Fhenix FHE codec.",
+  "keywords": [
+    "x402",
+    "settlement",
+    "escrow",
+    "eip-3009",
+    "fhe",
+    "fhenix",
+    "sdk",
+    "viem"
+  ],
+  "author": "Reineira Labs (https://reineira.xyz)",
+  "homepage": "https://github.com/ReineiraOS/x402#readme",
+  "bugs": "https://github.com/ReineiraOS/x402/issues",
   "license": "MIT",
   "repository": {
     "type": "git",

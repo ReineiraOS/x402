@@ -1,7 +1,21 @@
 {
   "name": "@reineira-os/rss",
   "version": "0.1.0",
-  "description": "Reineira Settlement Standard — plaintext IConditionResolver / IUnderwriterPolicy conformance suites, the interface-only IFundingSource, and the confidential (FHE) profile: IConfidentialFundingSource / IConfidentialUnderwriterPolicy / IConfidentialConditionResolver with conformance suites",
+  "description": "Reineira Settlement Standard — Solidity interfaces and conformance suites for programmable, optionally-confidential settlement.",
+  "keywords": [
+    "reineira",
+    "settlement",
+    "standard",
+    "solidity",
+    "interfaces",
+    "confidential",
+    "fhe",
+    "escrow",
+    "insurance"
+  ],
+  "author": "Reineira Labs (https://reineira.xyz)",
+  "homepage": "https://github.com/ReineiraOS/x402#readme",
+  "bugs": "https://github.com/ReineiraOS/x402/issues",
   "license": "MIT",
   "repository": {
     "type": "git",

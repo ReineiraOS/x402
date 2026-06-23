@@ -1,7 +1,18 @@
 {
   "name": "@reineira-os/x402-shared",
   "version": "0.1.0",
-  "description": "Shared types, ABIs, and chain/x402 constants for the x402-rss adapter",
+  "description": "Shared types, ABIs, and chain/x402 constants for the Reineira x402 adapter.",
+  "keywords": [
+    "x402",
+    "types",
+    "abi",
+    "constants",
+    "arbitrum",
+    "web3"
+  ],
+  "author": "Reineira Labs (https://reineira.xyz)",
+  "homepage": "https://github.com/ReineiraOS/x402#readme",
+  "bugs": "https://github.com/ReineiraOS/x402/issues",
   "license": "MIT",
   "repository": {
     "type": "git",
