@@ -1,6 +1,6 @@
 {
   "name": "@reineira-os/rss",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Reineira Settlement Standard — plaintext IConditionResolver / IUnderwriterPolicy conformance suites, the interface-only IFundingSource, and the confidential (FHE) profile: IConfidentialFundingSource / IConfidentialUnderwriterPolicy / IConfidentialConditionResolver with conformance suites",
   "license": "MIT",
   "repository": {
