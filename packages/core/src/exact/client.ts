@@ -1,8 +1,5 @@
 import { getAddress, toHex, type LocalAccount, type PublicClient } from "viem";
-import {
-  decodePaymentRequiredHeader,
-  encodePaymentSignatureHeader,
-} from "../http.js";
+import { decodePaymentRequiredHeader, encodePaymentSignatureHeader } from "../http.js";
 import type {
   ExactEvmAuthorization,
   ExactEvmPayload,
@@ -12,11 +9,7 @@ import type {
   PaymentRequirements,
   SelectPaymentRequirements,
 } from "../types.js";
-import {
-  deriveEscrowNonce,
-  getEscrowExtra,
-  ReceiveWithAuthorizationTypes,
-} from "./escrow.js";
+import { deriveEscrowNonce, getEscrowExtra, ReceiveWithAuthorizationTypes } from "./escrow.js";
 
 export type ClientEvmSigner = {
   readonly address: `0x${string}`;
@@ -71,13 +64,9 @@ export function toClientEvmSigner(
   return {
     address: account.address,
     signTypedData: (message) =>
-      account.signTypedData(
-        message as Parameters<LocalAccount["signTypedData"]>[0],
-      ),
+      account.signTypedData(message as Parameters<LocalAccount["signTypedData"]>[0]),
     readContract: (args) =>
-      publicClient.readContract(
-        args as Parameters<PublicClient["readContract"]>[0],
-      ),
+      publicClient.readContract(args as Parameters<PublicClient["readContract"]>[0]),
   };
 }
 
@@ -126,15 +115,11 @@ export class ExactEvmScheme {
       nonce: authorization.nonce,
     };
 
-    const types = escrowExtra
-      ? ReceiveWithAuthorizationTypes
-      : TransferWithAuthorizationTypes;
+    const types = escrowExtra ? ReceiveWithAuthorizationTypes : TransferWithAuthorizationTypes;
     const signature = await this.signer.signTypedData({
       domain,
       types: types as unknown as Record<string, unknown>,
-      primaryType: escrowExtra
-        ? "ReceiveWithAuthorization"
-        : "TransferWithAuthorization",
+      primaryType: escrowExtra ? "ReceiveWithAuthorization" : "TransferWithAuthorization",
       message,
     });
 
@@ -170,9 +155,7 @@ export class x402Client {
     x402Version: number,
     accepts: PaymentRequirements[],
   ): PaymentRequirements {
-    const supported = accepts.filter((requirement) =>
-      this.schemes.has(requirement.network),
-    );
+    const supported = accepts.filter((requirement) => this.schemes.has(requirement.network));
     const candidates = supported.length > 0 ? supported : accepts;
     return this.select(x402Version, candidates);
   }
@@ -189,10 +172,7 @@ export class x402Client {
       );
     }
 
-    const partial = await scheme.createPaymentPayload(
-      paymentRequired.x402Version,
-      requirements,
-    );
+    const partial = await scheme.createPaymentPayload(paymentRequired.x402Version, requirements);
 
     return {
       x402Version: partial.x402Version,
@@ -204,10 +184,7 @@ export class x402Client {
   }
 }
 
-export function wrapFetchWithPayment(
-  baseFetch: typeof fetch,
-  client: x402Client,
-): typeof fetch {
+export function wrapFetchWithPayment(baseFetch: typeof fetch, client: x402Client): typeof fetch {
   return (async (
     input: Parameters<typeof fetch>[0],
     init?: Parameters<typeof fetch>[1],
@@ -246,10 +223,7 @@ export function wrapFetchWithPayment(
       );
     }
 
-    clonedRequest.headers.set(
-      "payment-signature",
-      encodePaymentSignatureHeader(paymentPayload),
-    );
+    clonedRequest.headers.set("payment-signature", encodePaymentSignatureHeader(paymentPayload));
 
     return baseFetch(clonedRequest);
   }) as typeof fetch;

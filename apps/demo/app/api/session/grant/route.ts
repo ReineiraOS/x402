@@ -20,7 +20,11 @@ export async function POST(request: Request) {
   if (typeof body.approval !== "string" || body.approval.length === 0) {
     return NextResponse.json({ error: "approval is required" }, { status: 400 });
   }
-  if (typeof body.budgetAtomic !== "string" || !/^\d+$/.test(body.budgetAtomic) || BigInt(body.budgetAtomic) <= 0n) {
+  if (
+    typeof body.budgetAtomic !== "string" ||
+    !/^\d+$/.test(body.budgetAtomic) ||
+    BigInt(body.budgetAtomic) <= 0n
+  ) {
     return NextResponse.json({ error: "a positive budget is required" }, { status: 400 });
   }
   const ok = await saveGrant(treasury, body.approval, body.budgetAtomic);

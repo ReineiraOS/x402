@@ -31,12 +31,9 @@ const ESCROW_ID = "7";
 const SALT = ("0x" + "00".repeat(31) + "ab") as `0x${string}`;
 
 // cast keccak $(cast abi-encode "f(uint256,bytes32)" 7 0x00..ab)
-const EXPECTED_NONCE =
-  "0x89f7b0b4367d0fcce3b212957a1b1d291a2233228dbe23ba5a35fc72b112aebe";
+const EXPECTED_NONCE = "0x89f7b0b4367d0fcce3b212957a1b1d291a2233228dbe23ba5a35fc72b112aebe";
 
-function escrowRequirement(
-  overrides: Partial<PaymentRequirements> = {},
-): PaymentRequirements {
+function escrowRequirement(overrides: Partial<PaymentRequirements> = {}): PaymentRequirements {
   return {
     scheme: "exact",
     network: NETWORK,
@@ -78,9 +75,7 @@ async function escrowPayload(
   const scheme = new ExactEvmScheme({
     address: FROM,
     signTypedData: (message) =>
-      ACCOUNT.signTypedData(
-        message as Parameters<typeof ACCOUNT.signTypedData>[0],
-      ),
+      ACCOUNT.signTypedData(message as Parameters<typeof ACCOUNT.signTypedData>[0]),
   });
   const partial = await scheme.createPaymentPayload(2, requirements);
   return {
@@ -216,9 +211,7 @@ describe("verifyExact escrow mode", () => {
     });
     expect(res).toMatchObject({ isValid: true, payer: contractPayer });
 
-    const isValidSigCall = (
-      client.readContract as ReturnType<typeof vi.fn>
-    ).mock.calls.find(
+    const isValidSigCall = (client.readContract as ReturnType<typeof vi.fn>).mock.calls.find(
       (call) => (call[0] as { functionName: string }).functionName === "isValidSignature",
     );
     expect(isValidSigCall).toBeDefined();
@@ -319,10 +312,7 @@ describe("settleExact escrow mode", () => {
     expect(call.functionName).toBe("settle");
     expect(call.args[0]).toBe(BigInt(ESCROW_ID));
 
-    const [decoded] = decodeAbiParameters(
-      paymentAuthorizationAbiParameters,
-      call.args[1],
-    );
+    const [decoded] = decodeAbiParameters(paymentAuthorizationAbiParameters, call.args[1]);
     expect(decoded).toMatchObject({
       from: getAddress(exact.authorization.from),
       value: BigInt(exact.authorization.value),
@@ -331,11 +321,7 @@ describe("settleExact escrow mode", () => {
       signature: exact.signature,
     });
 
-    const encoded = encodePaymentAuthorization(
-      exact.authorization,
-      SALT,
-      exact.signature,
-    );
+    const encoded = encodePaymentAuthorization(exact.authorization, SALT, exact.signature);
     expect(call.args[1]).toBe(encoded);
   });
 

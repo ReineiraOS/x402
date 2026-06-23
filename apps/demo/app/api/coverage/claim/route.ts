@@ -8,6 +8,8 @@ import {
 } from "../../../../lib/coverage";
 import { sendFromTreasury } from "../../../../lib/sessionWallet";
 import { getSpendByEscrowId, markSpendClaimed } from "../../../../lib/agentStore";
+import { getConfidentialConfig } from "../../../../lib/confidentialConfig";
+import { disputeConfidentialCoverageClaim } from "../../../../lib/confidentialCoverage";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,30 @@ const erc20BalanceAbi = [
 // dispute originates from the buyer's treasury (the coverage holder), so a valid
 // breach pays USDC from the underwriter pool straight back to the treasury.
 export async function POST(request: Request) {
+  let body: { escrowId?: string; coverageId?: string; confidential?: boolean };
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return NextResponse.json({ error: "invalid JSON body" }, { status: 400 });
+  }
+
+  if (body.confidential === true) {
+    const confidentialCfg = getConfidentialConfig();
+    if (!confidentialCfg) {
+      return NextResponse.json({ error: "confidential not configured" }, { status: 400 });
+    }
+    const record = await getSpendByEscrowId(body.escrowId ?? "");
+    const coverageId = body.coverageId ?? record?.coverage?.coverageId;
+    if (!coverageId) {
+      return NextResponse.json({ error: "coverageId is required" }, { status: 400 });
+    }
+    const { tx, status } = await disputeConfidentialCoverageClaim(
+      confidentialCfg,
+      BigInt(coverageId),
+    );
+    return NextResponse.json({ ok: true, confidential: true, tx, status });
+  }
+
   const cfg = getCoverageConfig();
   if (!cfg) {
     return NextResponse.json(
@@ -33,12 +59,6 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { escrowId?: string };
-  try {
-    body = (await request.json()) as typeof body;
-  } catch {
-    return NextResponse.json({ error: "invalid JSON body" }, { status: 400 });
-  }
   if (!body.escrowId) {
     return NextResponse.json({ error: "escrowId is required" }, { status: 400 });
   }
@@ -46,10 +66,7 @@ export async function POST(request: Request) {
   const record = await getSpendByEscrowId(body.escrowId);
   const coverage = record?.coverage;
   if (!coverage || !coverage.coverageId) {
-    return NextResponse.json(
-      { error: "no coverage on this purchase" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "no coverage on this purchase" }, { status: 400 });
   }
   if (coverage.status !== "active") {
     return NextResponse.json(
@@ -125,7 +142,9 @@ export async function POST(request: Request) {
     functionName: "balanceOf",
     args: [treasury],
   })) as bigint;
-  const payoutAtomic = (balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0n).toString();
+  const payoutAtomic = (
+    balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0n
+  ).toString();
 
   await markSpendClaimed(body.escrowId, txHash, payoutAtomic);
 

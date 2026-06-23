@@ -85,9 +85,7 @@ function buildSigner(receiptStatus = "success"): FacilitatorEvmSigner {
 describe("X402Facilitator", () => {
   it("a fresh facilitator supports no networks", () => {
     const facilitator = new X402Facilitator();
-    expect(
-      facilitator.getSupported().kinds.some((k) => k.network === NETWORK),
-    ).toBe(false);
+    expect(facilitator.getSupported().kinds.some((k) => k.network === NETWORK)).toBe(false);
   });
 
   it("registerExactEvmScheme wires eip155:421614 into getSupported", () => {

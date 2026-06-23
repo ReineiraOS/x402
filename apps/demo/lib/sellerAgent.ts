@@ -58,8 +58,7 @@ export async function runSellerAgent(args: {
   forceDecline: boolean;
 }): Promise<SellerOutcome> {
   const { resource, artifact, emit, apiKey, forceDecline } = args;
-  const dataLine =
-    typeof artifact.result === "string" ? artifact.result : JSON.stringify(artifact);
+  const dataLine = typeof artifact.result === "string" ? artifact.result : JSON.stringify(artifact);
 
   if (forceDecline) {
     emit({

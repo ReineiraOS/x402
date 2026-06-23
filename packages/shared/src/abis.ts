@@ -293,3 +293,142 @@ export const escrowAbi = [
     outputs: [{ name: "", type: "bool" }],
   },
 ] as const;
+
+export const inEncryptedAbiComponents = [
+  { name: "ctHash", type: "uint256" },
+  { name: "securityZone", type: "uint8" },
+  { name: "utype", type: "uint8" },
+  { name: "signature", type: "bytes" },
+] as const;
+
+export const confidentialEscrowAbi = [
+  {
+    type: "function",
+    name: "create",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "encryptedOwner", type: "tuple", components: inEncryptedAbiComponents },
+      { name: "encryptedAmount", type: "tuple", components: inEncryptedAbiComponents },
+      { name: "resolver", type: "address" },
+      { name: "resolverData", type: "bytes" },
+    ],
+    outputs: [{ name: "escrowId", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "redeem",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "escrowId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "getOwner",
+    stateMutability: "view",
+    inputs: [{ name: "escrowId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "getAmount",
+    stateMutability: "view",
+    inputs: [{ name: "escrowId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "getPaidAmount",
+    stateMutability: "view",
+    inputs: [{ name: "escrowId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "getConditionResolver",
+    stateMutability: "view",
+    inputs: [{ name: "escrowId", type: "uint256" }],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "function",
+    name: "total",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "exists",
+    stateMutability: "view",
+    inputs: [{ name: "escrowId", type: "uint256" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "event",
+    name: "EscrowCreated",
+    anonymous: false,
+    inputs: [{ name: "escrowId", type: "uint256", indexed: true }],
+  },
+] as const;
+
+export const confidentialX402ReceiverAbi = [
+  {
+    type: "function",
+    name: "settle",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "escrowId", type: "uint256" },
+      { name: "fundingProof", type: "bytes" },
+    ],
+    outputs: [{ name: "funded", type: "uint256" }],
+  },
+] as const;
+
+export const confidentialCoverageManagerAbi = [
+  {
+    type: "function",
+    name: "purchaseCoverage",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "encryptedHolder", type: "tuple", components: inEncryptedAbiComponents },
+      { name: "pool", type: "address" },
+      { name: "policy", type: "address" },
+      { name: "escrowId", type: "uint256" },
+      { name: "encryptedCoverageAmount", type: "tuple", components: inEncryptedAbiComponents },
+      { name: "coverageExpiry", type: "uint256" },
+      { name: "policyData", type: "bytes" },
+      { name: "riskProof", type: "bytes" },
+    ],
+    outputs: [{ name: "coverageId", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "dispute",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "coverageId", type: "uint256" },
+      { name: "disputeProof", type: "bytes" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "coverageStatus",
+    stateMutability: "view",
+    inputs: [{ name: "coverageId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint8" }],
+  },
+  {
+    type: "function",
+    name: "getCoveragesForEscrow",
+    stateMutability: "view",
+    inputs: [{ name: "escrowId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint256[]" }],
+  },
+  {
+    type: "event",
+    name: "CoveragePurchased",
+    anonymous: false,
+    inputs: [{ name: "coverageId", type: "uint256", indexed: true }],
+  },
+] as const;

@@ -28,7 +28,10 @@ import { getResource, type ResourceDef } from "../../../lib/resources";
 import { getTreasurySigner, ensureTreasuryDeployed } from "../../../lib/sessionWallet";
 import { addSpent, getSession } from "../../../lib/sessionStore";
 import { attachCoverage } from "../../../lib/coverage";
-import { attestAndRedeem, getSellerEscrowConfig } from "../../../lib/sellerEscrow";
+import { attestAndRedeem, attestDelivery, getSellerEscrowConfig } from "../../../lib/sellerEscrow";
+import { getConfidentialConfig } from "../../../lib/confidentialConfig";
+import { readConfidentialAmountHandle, confidentialRedeem } from "../../../lib/confidentialEscrow";
+import { attachConfidentialCoverage } from "../../../lib/confidentialCoverage";
 import { runSellerAgent } from "../../../lib/sellerAgent";
 import { runTwoKeyHalt } from "../../../lib/twoKey";
 import { runIncidentResponse } from "../../../lib/incident";
@@ -272,6 +275,7 @@ async function runX402Payment(
   treasury: string | null,
   apiKey: string | undefined,
   forceDecline: boolean,
+  confidential = false,
 ): Promise<SellerRunResult> {
   const signer = await createBuyerSigner(emit, agent, treasury);
 
@@ -279,6 +283,7 @@ async function runX402Payment(
   const params = new URLSearchParams({ resourceId });
   if (agent?.deadlineSeconds) params.set("deadlineSeconds", String(agent.deadlineSeconds));
   if (wantsCoverage) params.set("coverage", "1");
+  if (confidential) params.set("confidential", "1");
   const resourceUrl = `${resource}?${params.toString()}`;
 
   const unpaid = await fetch(resourceUrl, { headers: { accept: "application/json" } });
@@ -318,11 +323,26 @@ async function runX402Payment(
     network,
   });
   if (escrowExtra) {
-    emit({
-      kind: "escrow",
-      escrowId: escrowExtra.escrowId,
-      escrowDeadline: requirements.extra?.escrowDeadline ?? null,
-    });
+    if (confidential) {
+      const cfg = getConfidentialConfig();
+      const amountHandle = cfg
+        ? (await readConfidentialAmountHandle(cfg)(BigInt(escrowExtra.escrowId))).toString()
+        : null;
+      emit({
+        kind: "escrow",
+        confidential: true,
+        escrow: escrowExtra.escrow,
+        escrowId: escrowExtra.escrowId,
+        amountHandle,
+        escrowDeadline: requirements.extra?.escrowDeadline ?? null,
+      });
+    } else {
+      emit({
+        kind: "escrow",
+        escrowId: escrowExtra.escrowId,
+        escrowDeadline: requirements.extra?.escrowDeadline ?? null,
+      });
+    }
   }
   await sleep(STEP_MS);
   emit({
@@ -425,12 +445,34 @@ async function runX402Payment(
       msg: "Attaches Insurance coverage to the Escrow — DeliveryPolicy on the underwriter pool",
     });
     try {
-      const cov = await attachCoverage({
-        escrowId: escrowExtra.escrowId,
-        amountAtomic: requirements.amount,
-        expiry,
-        holder,
-      });
+      const cov = confidential
+        ? await (async () => {
+            const cfg = getConfidentialConfig();
+            if (!cfg) throw new Error("confidential not configured");
+            const c = await attachConfidentialCoverage(cfg, {
+              escrowId: escrowExtra.escrowId,
+              amountAtomic: requirements.amount,
+              expiry,
+              holder,
+            });
+            return {
+              status: "active" as const,
+              coverageId: c.coverageId,
+              tx: c.tx,
+              pool: c.pool,
+              policy: c.policy,
+              holder: c.holder,
+              expiry: c.expiry,
+              amountAtomic: c.amountAtomic,
+              note: null,
+            };
+          })()
+        : await attachCoverage({
+            escrowId: escrowExtra.escrowId,
+            amountAtomic: requirements.amount,
+            expiry,
+            holder,
+          });
       await markSpendCovered(escrowExtra.escrowId, {
         coverageId: cov.coverageId,
         tx: cov.tx,
@@ -460,7 +502,11 @@ async function runX402Payment(
         emit({ zone: "system", level: "error", msg: cov.note ?? "Insurance attach failed" });
       }
     } catch (covErr) {
-      emit({ zone: "system", level: "error", msg: `Insurance attach error: ${errorMessage(covErr)}` });
+      emit({
+        zone: "system",
+        level: "error",
+        msg: `Insurance attach error: ${errorMessage(covErr)}`,
+      });
     }
     await sleep(STEP_MS);
   }
@@ -496,13 +542,22 @@ async function runX402Payment(
   let releaseTx: string | undefined;
   if (escrowExtra && sellerConfig?.deliveryResolver) {
     try {
-      const res = await attestAndRedeem(sellerConfig, BigInt(escrowExtra.escrowId));
-      releaseTx = res.redeemTx;
+      let redeemTx: `0x${string}`;
+      if (confidential) {
+        const cfg = getConfidentialConfig();
+        if (!cfg) throw new Error("confidential not configured");
+        await attestDelivery(sellerConfig, BigInt(escrowExtra.escrowId));
+        redeemTx = await confidentialRedeem(cfg, BigInt(escrowExtra.escrowId));
+      } else {
+        const res = await attestAndRedeem(sellerConfig, BigInt(escrowExtra.escrowId));
+        redeemTx = res.redeemTx;
+      }
+      releaseTx = redeemTx;
       emit({
         zone: "seller",
         msg: "Attests delivery on-chain and redeems the Escrow — payment released to the seller",
-        tx: res.redeemTx,
-        arbiscan: `https://sepolia.arbiscan.io/tx/${res.redeemTx}`,
+        tx: redeemTx,
+        arbiscan: `https://sepolia.arbiscan.io/tx/${redeemTx}`,
       });
     } catch (relErr) {
       emit({
@@ -583,6 +638,7 @@ export async function GET(request: Request) {
   const resourceDef = getResource(url.searchParams.get("resourceId"));
   const treasury = url.searchParams.get("treasury");
   const forceDecline = url.searchParams.get("sellerDecline") === "1";
+  const confidential = url.searchParams.get("confidential") === "1";
   const mode = url.searchParams.get("mode");
   const falseAlarm = url.searchParams.get("falseAlarm") === "1";
 
@@ -677,6 +733,7 @@ export async function GET(request: Request) {
             treasury,
             apiKey,
             forceDecline,
+            confidential,
           );
           await sleep(STEP_MS);
           emit({
@@ -809,6 +866,7 @@ export async function GET(request: Request) {
               treasury,
               apiKey,
               forceDecline,
+              confidential,
             );
             paid = true;
             boughtReport = out.report;

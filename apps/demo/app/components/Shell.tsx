@@ -24,7 +24,12 @@ export function Shell({ children }: { children: ReactNode }) {
       <Sidebar onToggle={toggle} />
       <main className="shell__main">
         {collapsed ? (
-          <button className="shell__reveal" onClick={toggle} aria-label="Show navigation" title="Show navigation">
+          <button
+            className="shell__reveal"
+            onClick={toggle}
+            aria-label="Show navigation"
+            title="Show navigation"
+          >
             <Icon name="panel" size={16} stroke={2} />
           </button>
         ) : null}

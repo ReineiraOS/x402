@@ -10,14 +10,29 @@ type NavItem = { href: string; label: string; icon: string; match: (p: string) =
 
 const GENERAL: NavItem[] = [
   { href: "/", label: "Agents", icon: "cube", match: (p) => p === "/" || p.startsWith("/agents") },
-  { href: "/analytics", label: "Analytics", icon: "chart", match: (p) => p.startsWith("/analytics") },
+  {
+    href: "/analytics",
+    label: "Analytics",
+    icon: "chart",
+    match: (p) => p.startsWith("/analytics"),
+  },
   { href: "/plugins", label: "Plugins", icon: "plug", match: (p) => p.startsWith("/plugins") },
-  { href: "/resources", label: "Resources", icon: "feed", match: (p) => p.startsWith("/resources") },
+  {
+    href: "/resources",
+    label: "Resources",
+    icon: "feed",
+    match: (p) => p.startsWith("/resources"),
+  },
 ];
 
 const SHOWCASES: NavItem[] = [
   { href: "/two-key", label: "Two-Key Halt", icon: "lock", match: (p) => p.startsWith("/two-key") },
-  { href: "/incident-response", label: "Incident Response", icon: "alert", match: (p) => p.startsWith("/incident-response") },
+  {
+    href: "/incident-response",
+    label: "Incident Response",
+    icon: "alert",
+    match: (p) => p.startsWith("/incident-response"),
+  },
 ];
 
 const NAV_GROUPS: { cap: string; items: NavItem[] }[] = [
@@ -37,7 +52,12 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
               <Wordmark size={26} />
             </Link>
             {onToggle ? (
-              <button className="side-nav__collapse" onClick={onToggle} aria-label="Hide navigation" title="Hide navigation">
+              <button
+                className="side-nav__collapse"
+                onClick={onToggle}
+                aria-label="Hide navigation"
+                title="Hide navigation"
+              >
                 <Icon name="panel" size={16} stroke={2} />
               </button>
             ) : null}
@@ -71,11 +91,23 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
         <div className="side-nav__group">
           <span className="side-nav__cap">Reference</span>
           <nav className="side-nav__links">
-            <a className="side-nav__link" href="https://reineira.xyz" target="_blank" rel="noreferrer">
-              <Icon name="globe" size={16} stroke={2} /> Website <span className="side-nav__ext">↗</span>
+            <a
+              className="side-nav__link"
+              href="https://reineira.xyz"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Icon name="globe" size={16} stroke={2} /> Website{" "}
+              <span className="side-nav__ext">↗</span>
             </a>
-            <a className="side-nav__link" href="https://reineira.xyz/docs" target="_blank" rel="noreferrer">
-              <Icon name="book" size={16} stroke={2} /> Docs <span className="side-nav__ext">↗</span>
+            <a
+              className="side-nav__link"
+              href="https://reineira.xyz/docs"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Icon name="book" size={16} stroke={2} /> Docs{" "}
+              <span className="side-nav__ext">↗</span>
             </a>
           </nav>
         </div>
@@ -85,7 +117,12 @@ export function Sidebar({ onToggle }: { onToggle?: () => void }) {
           <span className="side-nav__net">
             <span className="side-nav__net-dot" aria-hidden /> Testnet · Arbitrum Sepolia
           </span>
-          <a className="side-nav__social" href="https://t.me/ReineiraOS" target="_blank" rel="noreferrer">
+          <a
+            className="side-nav__social"
+            href="https://t.me/ReineiraOS"
+            target="_blank"
+            rel="noreferrer"
+          >
             Telegram ↗
           </a>
         </div>

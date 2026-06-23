@@ -1,9 +1,4 @@
-import {
-  createPublicClient,
-  getAddress,
-  http,
-  type PublicClient,
-} from "viem";
+import { createPublicClient, getAddress, http, type PublicClient } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import {
   toWebAuthnKey,

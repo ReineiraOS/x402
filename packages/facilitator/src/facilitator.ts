@@ -1,7 +1,10 @@
 import { createWalletClient, http, publicActions, type LocalAccount } from "viem";
 import { arbitrumSepolia as arbitrumSepoliaChain } from "viem/chains";
 import { X402Facilitator, registerExactEvmScheme } from "@reineira-os/x402-core/facilitator";
-import { toFacilitatorEvmSigner, type FacilitatorEvmSigner } from "@reineira-os/x402-core/exact/settle";
+import {
+  toFacilitatorEvmSigner,
+  type FacilitatorEvmSigner,
+} from "@reineira-os/x402-core/exact/settle";
 import { X402 } from "@reineira-os/x402-rss-shared";
 
 export interface CreateFacilitatorOptions {

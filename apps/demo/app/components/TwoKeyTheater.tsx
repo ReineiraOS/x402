@@ -125,7 +125,11 @@ function buildStages(
       key: "alarm",
       icon: "bolt",
       label: "Alarm",
-      sub: ms.alarm ? (isFalse || falseAlarm ? "false positive" : "breach committed") : "raise the alarm",
+      sub: ms.alarm
+        ? isFalse || falseAlarm
+          ? "false positive"
+          : "breach committed"
+        : "raise the alarm",
       state: at(1),
     },
     {
@@ -146,8 +150,18 @@ function buildStages(
       key: "settle",
       icon: isFalse ? "alert" : "check",
       label: "Settle",
-      sub: ms.settled ? (verdict === "VALID" ? "bond returned" : "bond slashed") : "settle the stake",
-      state: ms.settled ? (verdict === "VALID" ? "done" : "alert") : activeIdx === 4 ? "active" : "pending",
+      sub: ms.settled
+        ? verdict === "VALID"
+          ? "bond returned"
+          : "bond slashed"
+        : "settle the stake",
+      state: ms.settled
+        ? verdict === "VALID"
+          ? "done"
+          : "alert"
+        : activeIdx === 4
+          ? "active"
+          : "pending",
     },
   ];
 }
@@ -300,7 +314,11 @@ export function TwoKeyTheater() {
     // reset to the known on-chain snapshot (not a blank dash) so the hero never flashes empty
     setVault(
       snapRef.current
-        ? { state: "healthy", totalAssets: snapRef.current.totalAssets, recordedFloor: snapRef.current.recordedFloor }
+        ? {
+            state: "healthy",
+            totalAssets: snapRef.current.totalAssets,
+            recordedFloor: snapRef.current.recordedFloor,
+          }
         : { state: "idle", totalAssets: null, recordedFloor: null },
     );
 

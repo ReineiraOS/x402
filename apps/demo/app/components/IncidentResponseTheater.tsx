@@ -195,13 +195,19 @@ export function IncidentResponseTheater() {
     setLog((prev) => {
       const last = prev[prev.length - 1];
       if (last?.thinking && last.streaming) {
-        return [
-          ...prev.slice(0, -1),
-          { ...last, msg: last.msg + stripMarkdown(delta) },
-        ];
+        return [...prev.slice(0, -1), { ...last, msg: last.msg + stripMarkdown(delta) }];
       }
       const id = (idRef.current += 1);
-      return [...prev, { id, zone: "incident" as Zone, msg: stripMarkdown(delta), thinking: true, streaming: true }];
+      return [
+        ...prev,
+        {
+          id,
+          zone: "incident" as Zone,
+          msg: stripMarkdown(delta),
+          thinking: true,
+          streaming: true,
+        },
+      ];
     });
     setIsStreaming(true);
   }, []);
@@ -606,7 +612,11 @@ function ActorCard({
 }) {
   return (
     <div
-      className={[styles.actor, styles[`actor--${side}` as keyof typeof styles] as string, active ? styles["actor--active"] : ""]
+      className={[
+        styles.actor,
+        styles[`actor--${side}` as keyof typeof styles] as string,
+        active ? styles["actor--active"] : "",
+      ]
         .filter(Boolean)
         .join(" ")}
     >

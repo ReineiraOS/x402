@@ -1,11 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  encodeFunctionData,
-  getAddress,
-  parseSignature,
-  verifyTypedData,
-  type Hex,
-} from "viem";
+import { encodeFunctionData, getAddress, parseSignature, verifyTypedData, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 import {
@@ -249,8 +243,7 @@ describe("differential oracle — core vs installed @x402 runtime", () => {
       const x402Scheme = new X402ClientScheme(x402Signer);
       const coreSigner = {
         address: ACCOUNT.address,
-        signTypedData: (m: Parameters<typeof ACCOUNT.signTypedData>[0]) =>
-          ACCOUNT.signTypedData(m),
+        signTypedData: (m: Parameters<typeof ACCOUNT.signTypedData>[0]) => ACCOUNT.signTypedData(m),
       };
       const coreScheme = new CoreClientScheme(coreSigner);
 

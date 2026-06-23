@@ -178,8 +178,8 @@ export default function EditAgentPage() {
         <div className="wizard__section">
           <h2 className="wizard__title">Identity</h2>
           <p className="wizard__hint">
-            Change the name and standing instructions. The agent keeps its treasury access,
-            existing deals, and spend history.
+            Change the name and standing instructions. The agent keeps its treasury access, existing
+            deals, and spend history.
           </p>
           <label className="field">
             <span className="field__label">Name</span>

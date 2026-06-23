@@ -181,8 +181,8 @@ export default function NewAgentPage() {
           <div className="wizard__section">
             <h2 className="wizard__title">Plugins</h2>
             <p className="wizard__hint">
-              The TimeLock Gate is the mandatory anti-stranding default; add Insurance to cover
-              bad outcomes.
+              The TimeLock Gate is the mandatory anti-stranding default; add Insurance to cover bad
+              outcomes.
             </p>
             <div className="plugin-list">
               {plugins.map((plugin) => {
@@ -331,7 +331,11 @@ export default function NewAgentPage() {
             Continue
           </button>
         ) : (
-          <button className="btn-cta" onClick={() => void create()} disabled={creating || !canProceed}>
+          <button
+            className="btn-cta"
+            onClick={() => void create()}
+            disabled={creating || !canProceed}
+          >
             {creating ? "Creating agent…" : "Create agent"}
           </button>
         )}

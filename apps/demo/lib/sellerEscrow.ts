@@ -43,18 +43,13 @@ export function getSellerEscrowConfig(): SellerEscrowConfig | null {
     sellerAddress: seller.address,
     sellerKey: sellerKey as Hex,
     deadlineSeconds: Number(process.env.ESCROW_DEADLINE_SECONDS ?? 900),
-    rpcUrl:
-      process.env.ARBITRUM_SEPOLIA_RPC_URL ??
-      "https://sepolia-rollup.arbitrum.io/rpc",
+    rpcUrl: process.env.ARBITRUM_SEPOLIA_RPC_URL ?? "https://sepolia-rollup.arbitrum.io/rpc",
   };
 }
 
 // Which resolver gates a sale: TimeLock by default, or the DeliveryDeadlineResolver
 // when the buyer's agent runs the coverage plugin (its breach is what insurance underwrites).
-export function resolverForSale(
-  config: SellerEscrowConfig,
-  useDelivery: boolean,
-): `0x${string}` {
+export function resolverForSale(config: SellerEscrowConfig, useDelivery: boolean): `0x${string}` {
   if (useDelivery && config.deliveryResolver) return config.deliveryResolver;
   return config.timeLockResolver;
 }
@@ -263,6 +258,53 @@ const deliveryAttestAbi = [
 export interface AttestRedeemResult {
   attestTx?: `0x${string}`;
   redeemTx: `0x${string}`;
+}
+
+export async function attestDelivery(
+  config: SellerEscrowConfig,
+  escrowId: bigint,
+): Promise<`0x${string}` | undefined> {
+  if (!config.deliveryResolver) {
+    throw new Error("delivery resolver not configured");
+  }
+  const publicClient = publicClientFor(config);
+  const seller = privateKeyToAccount(config.sellerKey);
+  const walletClient = createWalletClient({
+    account: seller,
+    chain: arbitrumSepolia,
+    transport: http(config.rpcUrl),
+  });
+
+  const [delivered, deadline] = (await Promise.all([
+    publicClient.readContract({
+      address: config.deliveryResolver,
+      abi: deliveryAttestAbi,
+      functionName: "isDelivered",
+      args: [escrowId],
+    }),
+    publicClient.readContract({
+      address: config.deliveryResolver,
+      abi: deliveryAttestAbi,
+      functionName: "deadlineOf",
+      args: [escrowId],
+    }),
+  ])) as [boolean, bigint];
+
+  if (delivered) return undefined;
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  if (now > deadline) {
+    throw new Error("delivery deadline already passed — cannot attest (breach)");
+  }
+  const { request } = await publicClient.simulateContract({
+    account: seller,
+    address: config.deliveryResolver,
+    abi: deliveryAttestAbi,
+    functionName: "attestDelivery",
+    args: [escrowId],
+  });
+  const attestTx = await walletClient.writeContract(request);
+  await publicClient.waitForTransactionReceipt({ hash: attestTx });
+  return attestTx;
 }
 
 // The seller's autonomous on-chain delivery: attest delivery on the resolver (only

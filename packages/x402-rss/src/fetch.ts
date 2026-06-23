@@ -1,6 +1,10 @@
 import { createPublicClient, http, type LocalAccount } from "viem";
 import { arbitrumSepolia as arbitrumSepoliaChain } from "viem/chains";
-import { wrapFetchWithPayment, x402Client, type SelectPaymentRequirements } from "@reineira-os/x402-core/exact/client";
+import {
+  wrapFetchWithPayment,
+  x402Client,
+  type SelectPaymentRequirements,
+} from "@reineira-os/x402-core/exact/client";
 import { ExactEvmScheme, toClientEvmSigner } from "@reineira-os/x402-core/exact/client";
 import { arbitrumSepolia } from "./config.js";
 
@@ -27,7 +31,9 @@ export function createX402RssFetch(opts: CreateX402RssFetchOptions): typeof fetc
         r.asset.toLowerCase() === arbitrumSepolia.usdc.toLowerCase(),
     );
     if (!chosen) {
-      throw new Error("x402-rss: no acceptable payment requirements (exact / eip155:421614 / USDC)");
+      throw new Error(
+        "x402-rss: no acceptable payment requirements (exact / eip155:421614 / USDC)",
+      );
     }
     if (!/^[0-9]+$/.test(chosen.amount)) {
       throw new Error("x402-rss: malformed payment amount");

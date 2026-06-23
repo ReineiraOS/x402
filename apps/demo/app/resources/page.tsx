@@ -41,15 +41,17 @@ export default function ResourcesPage() {
           <span className="eyebrow">Catalog</span>
           <h1 className="page__title">Resources</h1>
           <p className="page__lead">
-            What an agent can buy over x402. Every purchase can settle into Escrow — funds stay
-            held until a Gate verifies the release condition, not sent straight to the seller.
+            What an agent can buy over x402. Every purchase can settle into Escrow — funds stay held
+            until a Gate verifies the release condition, not sent straight to the seller.
           </p>
         </div>
       </div>
 
       {loading ? (
         <div className="page__empty">
-          <span className="spin" aria-hidden>◠</span>
+          <span className="spin" aria-hidden>
+            ◠
+          </span>
           loading resources…
         </div>
       ) : (

@@ -13,6 +13,9 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0",
-    "@reineira-os/rss": "workspace:*"
+    "@reineira-os/rss": "workspace:*",
+    "@fhenixprotocol/cofhe-contracts": "0.1.3",
+    "@cofhe/foundry-plugin": "^0.5.2",
+    "@cofhe/mock-contracts": "^0.5.2"
   }
 }

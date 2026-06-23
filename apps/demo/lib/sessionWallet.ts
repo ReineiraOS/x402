@@ -1,10 +1,4 @@
-import {
-  createPublicClient,
-  getAddress,
-  http,
-  zeroAddress,
-  type PublicClient,
-} from "viem";
+import { createPublicClient, getAddress, http, zeroAddress, type PublicClient } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { createKernelAccountClient, createZeroDevPaymasterClient } from "@zerodev/sdk";

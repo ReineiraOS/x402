@@ -15,7 +15,9 @@ function required(name: string): string {
 async function main() {
   const rpcUrl = process.env.ARBITRUM_SEPOLIA_RPC_URL;
   const buyer = privateKeyToAccount(required("BUYER_PRIVATE_KEY") as `0x${string}`);
-  const facilitatorAccount = privateKeyToAccount(required("FACILITATOR_PRIVATE_KEY") as `0x${string}`);
+  const facilitatorAccount = privateKeyToAccount(
+    required("FACILITATOR_PRIVATE_KEY") as `0x${string}`,
+  );
 
   const usdc = getAddress(ARBITRUM_SEPOLIA.usdc);
   const payTo = facilitatorAccount.address; // provider = facilitator address, so we can see buyer -> provider
@@ -24,7 +26,12 @@ async function main() {
   const publicClient = createPublicClient({ chain: arbitrumSepolia, transport: http(rpcUrl) });
 
   const readUsdc = (account: `0x${string}`) =>
-    publicClient.readContract({ address: usdc, abi: erc3009Abi, functionName: "balanceOf", args: [account] }) as Promise<bigint>;
+    publicClient.readContract({
+      address: usdc,
+      abi: erc3009Abi,
+      functionName: "balanceOf",
+      args: [account],
+    }) as Promise<bigint>;
 
   console.log("chain:", await publicClient.getChainId());
   console.log("buyer:", buyer.address);
@@ -36,7 +43,8 @@ async function main() {
   console.log("facilitator ETH:", formatUnits(facilitatorEth, 18));
   console.log("buyer USDC:", formatUnits(buyerUsdcBefore, 6));
   if (facilitatorEth === 0n) throw new Error("facilitator has 0 ETH — fund it for gas");
-  if (buyerUsdcBefore < BigInt(amount)) throw new Error(`buyer USDC ${buyerUsdcBefore} < amount ${amount} — fund the buyer`);
+  if (buyerUsdcBefore < BigInt(amount))
+    throw new Error(`buyer USDC ${buyerUsdcBefore} < amount ${amount} — fund the buyer`);
 
   const requirements: PaymentRequirements = {
     scheme: X402.scheme,
@@ -71,7 +79,12 @@ async function main() {
   const buyerUsdcAfter = await readUsdc(buyer.address);
   const payToUsdcAfter = await readUsdc(payTo);
   console.log("buyer USDC:", formatUnits(buyerUsdcBefore, 6), "->", formatUnits(buyerUsdcAfter, 6));
-  console.log("provider USDC:", formatUnits(payToUsdcBefore, 6), "->", formatUnits(payToUsdcAfter, 6));
+  console.log(
+    "provider USDC:",
+    formatUnits(payToUsdcBefore, 6),
+    "->",
+    formatUnits(payToUsdcAfter, 6),
+  );
   console.log("Arbiscan:", `https://sepolia.arbiscan.io/tx/${settle.transaction}`);
 }
 
