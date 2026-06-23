@@ -10,7 +10,7 @@ import {
 } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
-import { escrowAbi } from "@reineira-os/x402-rss-shared";
+import { escrowAbi } from "@reineira-os/x402-shared";
 import { ExactEvmScheme } from "@reineira-os/x402-core/exact/client";
 import { settleExact, toFacilitatorEvmSigner } from "@reineira-os/x402-core/exact/settle";
 import type { PaymentPayload, PaymentRequirements } from "@reineira-os/x402-core/types";

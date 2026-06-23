@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { arbitrumSepolia } from "../src/config.js";
-import { ARBITRUM_SEPOLIA, X402 } from "@reineira-os/x402-rss-shared";
+import { ARBITRUM_SEPOLIA, X402 } from "@reineira-os/x402-shared";
 
 describe("arbitrumSepolia config", () => {
   it("matches the shared Arbitrum Sepolia + x402 constants", () => {

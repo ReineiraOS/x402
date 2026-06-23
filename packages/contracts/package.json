@@ -1,8 +1,20 @@
 {
-  "name": "@reineira-os/x402-rss-contracts",
+  "name": "@reineira-os/x402-contracts",
   "version": "0.0.0",
   "description": "Deployable RSS implementations — Delivery resolver/policy and X402 escrow receiver",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ReineiraOS/x402.git",
+    "directory": "packages/contracts"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "contracts",
+    "script"
+  ],
   "scripts": {
     "build": "forge build",
     "compile": "forge build",

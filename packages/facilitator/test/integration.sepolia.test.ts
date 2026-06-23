@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { privateKeyToAccount } from "viem/accounts";
 import type { PaymentPayload, PaymentRequirements } from "@reineira-os/x402-core/types";
-import { ARBITRUM_SEPOLIA, X402 } from "@reineira-os/x402-rss-shared";
+import { ARBITRUM_SEPOLIA, X402 } from "@reineira-os/x402-shared";
 import { createFacilitator } from "../src/facilitator.js";
 
 const RUN = process.env.X402_FACILITATOR_INTEGRATION === "1";

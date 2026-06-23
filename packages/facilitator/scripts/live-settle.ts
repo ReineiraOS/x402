@@ -1,7 +1,7 @@
 import { privateKeyToAccount } from "viem/accounts";
 import { createPublicClient, http, formatUnits, getAddress } from "viem";
 import { arbitrumSepolia } from "viem/chains";
-import { ARBITRUM_SEPOLIA, X402, erc3009Abi } from "@reineira-os/x402-rss-shared";
+import { ARBITRUM_SEPOLIA, X402, erc3009Abi } from "@reineira-os/x402-shared";
 import { toClientEvmSigner, ExactEvmScheme } from "@reineira-os/x402-core/exact/client";
 import type { PaymentPayload, PaymentRequirements } from "@reineira-os/x402-core/types";
 import { createFacilitator } from "../src/facilitator.js";

@@ -1,7 +1,16 @@
 {
   "name": "@reineira-os/x402-rss",
   "version": "0.0.0",
+  "description": "Insured, FHE-confidential x402 settlement on the Reineira Settlement Standard (umbrella SDK)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ReineiraOS/x402.git",
+    "directory": "packages/x402-rss"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -24,7 +33,7 @@
   "dependencies": {
     "viem": "^2.21.0",
     "@reineira-os/x402-core": "workspace:*",
-    "@reineira-os/x402-rss-shared": "workspace:*"
+    "@reineira-os/x402-shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -9,7 +9,7 @@ import {
 } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
-import { ARBITRUM_SEPOLIA } from "@reineira-os/x402-rss-shared";
+import { ARBITRUM_SEPOLIA } from "@reineira-os/x402-shared";
 import { getSellerEscrowConfig } from "./sellerEscrow";
 
 export const coverageManagerAbi = [

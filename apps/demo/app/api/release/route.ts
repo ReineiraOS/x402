@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createPublicClient, createWalletClient, getAddress, http } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
-import { escrowAbi, timeLockResolverAbi } from "@reineira-os/x402-rss-shared";
+import { escrowAbi, timeLockResolverAbi } from "@reineira-os/x402-shared";
 import { getSellerEscrowConfig } from "../../../lib/sellerEscrow";
 import { deliveryResolverAbi } from "../../../lib/coverage";
 import { markSpendReleased } from "../../../lib/agentStore";

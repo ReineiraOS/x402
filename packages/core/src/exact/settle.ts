@@ -1,5 +1,5 @@
 import { getAddress, parseSignature, type Hex } from "viem";
-import { erc3009Abi, x402EscrowReceiverAbi } from "@reineira-os/x402-rss-shared";
+import { erc3009Abi, x402EscrowReceiverAbi } from "@reineira-os/x402-shared";
 import type {
   ExactEvmAuthorization,
   ExactEvmPayload,

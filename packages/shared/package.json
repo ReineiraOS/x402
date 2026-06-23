@@ -1,7 +1,16 @@
 {
-  "name": "@reineira-os/x402-rss-shared",
+  "name": "@reineira-os/x402-shared",
   "version": "0.0.0",
+  "description": "Shared types, ABIs, and chain/x402 constants for the x402-rss adapter",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ReineiraOS/x402.git",
+    "directory": "packages/shared"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

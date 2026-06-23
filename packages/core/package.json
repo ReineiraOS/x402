@@ -1,7 +1,16 @@
 {
   "name": "@reineira-os/x402-core",
   "version": "0.0.0",
+  "description": "x402 confidential settlement SDK — exact scheme, escrow funding, and the Fhenix FHE codec",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ReineiraOS/x402.git",
+    "directory": "packages/core"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -50,7 +59,7 @@
   },
   "dependencies": {
     "viem": "^2.21.0",
-    "@reineira-os/x402-rss-shared": "workspace:*",
+    "@reineira-os/x402-shared": "workspace:*",
     "@cofhe/sdk": "^0.5.2"
   },
   "devDependencies": {

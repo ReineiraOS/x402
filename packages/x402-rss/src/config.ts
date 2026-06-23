@@ -1,4 +1,4 @@
-import { ARBITRUM_SEPOLIA, X402 } from "@reineira-os/x402-rss-shared";
+import { ARBITRUM_SEPOLIA, X402 } from "@reineira-os/x402-shared";
 
 export const arbitrumSepolia = {
   chainId: ARBITRUM_SEPOLIA.chainId,
