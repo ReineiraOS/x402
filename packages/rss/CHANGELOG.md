@@ -1,5 +1,11 @@
 # @reineira-os/rss
 
+## 0.1.2
+
+### Patch Changes
+
+- 26d35b8: Docs: consistent per-package READMEs (install snippet + family framing + license footer; subpath-exports table for x402-core), root README badges, and removal of the stale DEPLOY.md (the demo moved to ReineiraOS/examples).
+
 ## 0.1.1
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@reineira-os/x402",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Insured, condition-gated, FHE-confidential x402 settlement on Arbitrum — the batteries-included adapter SDK.",
   "keywords": [
     "x402",
