@@ -1,6 +1,6 @@
 {
   "name": "@reineira-os/rss",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Reineira Settlement Standard — Solidity interfaces and conformance suites for programmable, optionally-confidential settlement.",
   "keywords": [
     "reineira",
