@@ -1,5 +1,7 @@
 # x402
 
+[![npm](https://img.shields.io/npm/v/@reineira-os/x402.svg)](https://www.npmjs.com/package/@reineira-os/x402) [![CI](https://github.com/ReineiraOS/x402/actions/workflows/ci.yml/badge.svg)](https://github.com/ReineiraOS/x402/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 **Insured, FHE-confidential x402 settlement on the Reineira Settlement Standard.**
 
 `@reineira-os/x402` routes an [x402](https://x402.org) HTTP-402 payment into a settlement that is
@@ -50,8 +52,9 @@ pnpm add @reineira-os/rss @reineira-os/x402-contracts
 | `@reineira-os/x402-shared`      | TypeScript         | Shared types, addresses, x402 constants, ABIs                                       |
 
 A reference dashboard (autonomous buyer + seller agents settling on-chain, with a Settlement Theater
-that shows the on-chain ciphertext and an authorized-party "reveal") is in this repo under
-`apps/demo`, and is being moved to [`ReineiraOS/examples`](https://github.com/ReineiraOS/examples).
+that shows the on-chain ciphertext and an authorized-party "reveal") lives in
+[`ReineiraOS/examples`](https://github.com/ReineiraOS/examples/tree/main/solutions/x402-insured-settlement)
+and is deployed live at **[x402.reineira.xyz](https://x402.reineira.xyz)**.
 
 ## The standard (`@reineira-os/rss`)
 

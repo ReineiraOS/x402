@@ -1,7 +1,15 @@
 # @reineira-os/x402-facilitator
 
-Standalone, self-hosted x402 facilitator (verify + settle) for Arbitrum Sepolia.
-The hosted CDP facilitator does not cover Sepolia, so we run our own.
+Standalone, self-hosted x402 facilitator (verify + settle) for Arbitrum Sepolia. The hosted CDP
+facilitator does not cover Sepolia, so we run our own.
+
+> Part of [**x402**](https://github.com/ReineiraOS/x402) — insured, FHE-confidential settlement on the [Reineira Settlement Standard](https://www.npmjs.com/package/@reineira-os/rss).
+
+## Install
+
+```bash
+pnpm add @reineira-os/x402-facilitator
+```
 
 ## Run
 
@@ -38,3 +46,7 @@ End-to-end tests in `test/integration.sepolia.test.ts` are skipped by default. E
 X402_FACILITATOR_INTEGRATION=1 pnpm test   # runs /verify integration test
 X402_FACILITATOR_SETTLE=1 pnpm test        # also runs /settle (broadcasts on-chain)
 ```
+
+## License
+
+MIT © Reineira Labs
